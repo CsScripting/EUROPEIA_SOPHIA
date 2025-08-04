@@ -1,0 +1,8 @@
+XLSX_FILES/
+XML_FILES/
+LOGS/
+DATA_PROCESS/
+
+_pycache__/
+*.pyc
+src/entities
