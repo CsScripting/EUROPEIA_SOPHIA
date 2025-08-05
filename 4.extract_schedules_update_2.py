@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 import logging
 import datetime
 import sys
@@ -25,6 +26,12 @@ log_file_path = os.path.join(log_dir, log_file_name)
 setup_colored_logging(log_file_path)
 redirect_stdout_stderr_to_log()
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
+
+'''
+IDENTIFICAR FICHEIRO SAIDA
+'''
+INSTITUTION = "EU_2025_PRIMER"
+
 
 # --- Variáveis de Controlo ---
 SOURCE_DATA_DIR = os.path.join("DATA_PROCESS")
@@ -74,10 +81,43 @@ def main():
     
     df_events_SHOPIA_FINAL = add_teacher_code_to_horarios_shopia(df_events_BEST, df_horarios_shopia)
 
+    def move_column_before_last_n(df, column_name, n):
+        cols = df.columns.tolist()
+        cols.remove(column_name)
+        insert_pos = len(cols) - n
+        cols.insert(insert_pos, column_name)
+        return df[cols]
+
+    df_events_SHOPIA_FINAL['DIMENSAO_SOPHIA'] = df_events_SHOPIA_FINAL['DgTurma'] + "_" + df_events_SHOPIA_FINAL['CdDisc']
+    df_events_SHOPIA_FINAL = move_column_before_last_n(df_events_SHOPIA_FINAL, 'DIMENSAO_SOPHIA', 4)
+
+    df_events_SHOPIA_FINAL = move_column_before_last_n(df_events_SHOPIA_FINAL, 'CdDocente', 6)
+
     # Guardar o DataFrame final em um novo ficheiro Excel
-    output_file_path = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, 'df_events_SHOPIA_FINAL.xlsx')
-    df_events_SHOPIA_FINAL.to_excel(output_file_path, index=False, sheet_name="NHORARIOS")
+    output_file_path = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f'df_NHORARIOS_FINAL_{INSTITUTION}.xlsx')
+    df_events_SHOPIA_FINAL.to_excel(output_file_path, index=False, sheet_name="NHORARIOS", freeze_panes=(1,0))
     logger.info(f"O ficheiro final foi guardado em: {output_file_path}")
+
+    df_events_BEST['DIMENSAO_SOPHIA'] = df_events_BEST['DgTurma'].astype(str) + "_" + df_events_BEST['CdDisc_SHOPIA'].astype(str)
+
+    df_events_SHOPIA_FINAL = df_events_SHOPIA_FINAL[['DIMENSAO_SOPHIA']].drop_duplicates()
+    df_events_SHOPIA_FINAL['NHorario'] = 1
+
+    df_events_SHOPIA_FINAL= df_events_SHOPIA_FINAL.astype({"DIMENSAO_SOPHIA": "str"})
+    df_events_BEST = df_events_BEST.astype({"DIMENSAO_SOPHIA": "str"})
+    
+    df_events_BEST = pd.merge(df_events_BEST, df_events_SHOPIA_FINAL, on=["DIMENSAO_SOPHIA"], how="left", indicator=True)
+    matches_Nhorarios = len(df_events_BEST[df_events_BEST['_merge'] == 'both'])
+    logger.notice(f"Merge N_HORARIOS | HORARIOS BEST: {matches_Nhorarios} Linhas encontradas.")
+    df_events_BEST['NHorario'] = np.where(df_events_BEST['_merge'] == 'left_only', 0, 1)
+    df_events_BEST = df_events_BEST.drop(columns=['_merge'])
+
+
+    # Guardar o DataFrame final em um novo ficheiro Excel
+    output_file_path = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f'df_BEST_MAP_NHORARIOS_{INSTITUTION}.xlsx')
+    df_events_BEST.to_excel(output_file_path, index=False, sheet_name="BEST_NHORARIOs", freeze_panes=(1,0))
+    logger.info(f"O ficheiro final foi guardado em: {output_file_path}")
+
 
 
     logger.notice("--- FIM DO PROCESSO ---")

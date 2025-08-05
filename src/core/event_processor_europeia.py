@@ -221,7 +221,7 @@ def merge_data_entities(df_events: pd.DataFrame, df_st_groups: pd.DataFrame, df_
     df_merged = df_merged.drop(columns=['_merge'])
     
     # merge PROFESSORES:
-    df_professores_copy = df_professores[["NContabilistico"]].copy().drop_duplicates()
+    df_professores_copy = df_professores[["NContabilistico", "NDocente"]].copy().drop_duplicates()
     df_professores_copy['ValidProfessor'] = 1
 
     df_merged = df_merged.astype({"NContabilistico": "str"})
@@ -363,14 +363,17 @@ def extract_relation_teachers_best(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("A iniciar a extração e agregação da relação de docentes.")
 
     # 1. Selecionar apenas as colunas relevantes
-    df_best_teachers = df[["CdDisc_SHOPIA","CdDisc", "DgTurma", "CdCurso", "NContabilistico", "teacher_names"]].copy()
+    df_best_teachers = df[["CdDisc_SHOPIA","CdDisc", "DgTurma", "CdCurso", "NContabilistico", "teacher_names", "NDocente"]].copy()
+
+    df_best_teachers["NDocente"] = df_best_teachers["NDocente"].astype(int).astype(str)
 
 
     # 3. Agrupar pela combinação única de disciplina, turma e curso
     # e agregar os dados dos professores em listas
     aggregation_rules = {
         'NContabilistico': lambda x: sorted(list(x.unique())),
-        'teacher_names': lambda x: sorted(list(x.unique()))
+        'teacher_names': lambda x: sorted(list(x.unique())),
+        'NDocente': lambda x: sorted(list(x.unique()))
     }
     
     df_aggregated = df_best_teachers.groupby(['CdDisc',"CdDisc_SHOPIA", 'DgTurma', 'CdCurso']).agg(aggregation_rules).reset_index()
@@ -397,7 +400,7 @@ def add_teacher_code_to_horarios_shopia(df_best_teachers: pd.DataFrame, df_horar
     logger.info("Iniciando reconciliação com limpeza de chaves robusta.")
 
     df_horarios_shopia = df_horarios_shopia.rename(columns={"CdDis": "CdDisc",
-                                                            "NContabilistico": "CdDocente"})
+                                                            "NDocente": "CdDocente"})
 
     # --- 1. PREPARAÇÃO E LIMPEZA ROBUSTA DAS CHAVES ---
 
@@ -430,11 +433,11 @@ def add_teacher_code_to_horarios_shopia(df_best_teachers: pd.DataFrame, df_horar
         except (ValueError, SyntaxError):
             return [val] if val else []
     
-    df_best_prepared['NContabilistico_list'] = df_best_prepared['NContabilistico'].apply(safe_list_eval)
-    df_best_prepared['DSD'] = df_best_prepared['NContabilistico_list'].apply(len)
+    df_best_prepared['NDocente_list'] = df_best_prepared['NDocente'].apply(safe_list_eval)
+    df_best_prepared['DSD'] = df_best_prepared['NDocente_list'].apply(len)
     
     # Selecionar colunas da BEST para o merge
-    df_best_to_merge = df_best_prepared[key_cols + ['DSD', 'NContabilistico_list']].drop_duplicates(subset=key_cols)
+    df_best_to_merge = df_best_prepared[key_cols + ['DSD', 'NDocente_list']].drop_duplicates(subset=key_cols)
 
     # --- 2. MERGE E CÁLCULO DE STATUS ---
     df_merged = pd.merge(df_analysis, df_best_to_merge, on=key_cols, how='left')
@@ -455,7 +458,7 @@ def add_teacher_code_to_horarios_shopia(df_best_teachers: pd.DataFrame, df_horar
         if group['InfoDSD'].iloc[0] == 'NO_BEST_DATA':
             continue
             
-        professores_best = group['NContabilistico_list'].iloc[0] if isinstance(group['NContabilistico_list'].iloc[0], list) else []
+        professores_best = group['NDocente_list'].iloc[0] if isinstance(group['NDocente_list'].iloc[0], list) else []
         professores_best_set = set(map(str, professores_best))
         professores_shopia_atuais = set(group['CdDocente'].astype(str).dropna().unique())
         professores_a_adicionar = sorted(list(professores_best_set - professores_shopia_atuais))
@@ -474,8 +477,10 @@ def add_teacher_code_to_horarios_shopia(df_best_teachers: pd.DataFrame, df_horar
                     df_merged.loc[index, 'NovoProf'] = ''
 
     # --- 4. LIMPEZA FINAL ---
-    df_final = df_merged.drop(columns=['NContabilistico_list'])
-    
+    # df_final = df_merged.drop(columns=['NDocente_list'])
+    df_final = df_merged
+    df_final.rename(columns={"DSD": "DSD_NR_BEST", 
+                             "NDocente_list": "DSD_BEST"}, inplace=True)
     logger.info("Processo de reconciliação (chaves diretas e limpas) concluído.")
     return df_final
 

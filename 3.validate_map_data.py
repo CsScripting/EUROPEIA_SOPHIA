@@ -31,10 +31,34 @@ NAME_FILE_SCHEDULES_BEST = "fetch_event_EU_2025_PRIMER.xlsx"
 
 # Padrões para encontrar os ficheiros mais recentes
 
+'''
+IDENTIFICAR FICHEIRO SAIDA
+'''
 INSTITUTION = "EU_2025_PRIMER"
 
-SOURCE_DATA_DIR_SHOPIA = os.path.join("DATA_PROCESS")
+'''
+### DADOS DE ENTRADA ####:
 
+* EVENTOS DA RESPECTIVA INSTITUIÇÃO --> EXTRAIDOS DESDE BEST
+* DADOS DA RESPECTIVA INSTITUIÇÃO PROVENINETES DE SHOPIA --> EXTRAIDOS DESDE SHOPIA
+
+### OBJETIVO FINAL ###
+
+* VERIFICAR SE DADOS DE EVENTOS (3 DIMENSÕES) EXISTEM NO SHOPIA 
+    --> EM SCHEDULES_BEST GUARDA EVENTOS "VALIDOS" E "INVALIDOS"
+* VERIFICAR SE DADOS DE NHORARIOS TEM PROFESSORES MAPEADOS EM BEST
+    --> EM DATA_UPDATE GUARDA NHORARIOS "VALIDOS" E "INVALIDOS"
+
+'''
+
+## DADOS BEST
+SOURCE_DATA_DIR_SCHEDULES_BEST = os.path.join("DATA_PROCESS", "SCHEDULES_BEST")
+NAME_FILE_SCHEDULES_BEST = "fetch_event_EU_2025_PRIMER.xlsx"
+
+
+
+## DADOS SHOPIA
+SOURCE_DATA_DIR_SHOPIA = os.path.join("DATA_PROCESS")
 SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE = os.path.join(SOURCE_DATA_DIR_SHOPIA, "DATA_UPDATE")
 COURSES_FILE = "Cursos_QA.xlsx"
 DISCIPLINAS_FILE = "Disciplinas_QA_Ano2025.xlsx"
@@ -114,10 +138,10 @@ def main():
 
     # 6. Salvar o resultado final
     output_filename = os.path.join(SOURCE_DATA_DIR_SCHEDULES_BEST, f"Valid_data_{INSTITUTION}.xlsx")
-    df_merged_valid_events.to_excel(output_filename, index=False, sheet_name="MergedData_Valid")
+    df_merged_valid_events.to_excel(output_filename, index=False, sheet_name="MergedData_Valid", freeze_panes=(1,0))
     logger.info(f"Dados finais guardados com sucesso em: {output_filename}")
     output_filename = os.path.join(SOURCE_DATA_DIR_SCHEDULES_BEST, f"Invalid_data_{INSTITUTION}.xlsx")
-    df_merged_invalid_events.to_excel(output_filename, index=False, sheet_name="MergedData_Invalid")
+    df_merged_invalid_events.to_excel(output_filename, index=False, sheet_name="MergedData_Invalid", freeze_panes=(1,0))
     logger.info(f"Dados finais guardados com sucesso em: {output_filename}")
 
 
@@ -125,10 +149,10 @@ def main():
 
     # 6. Salvar o resultado final
     output_filename = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f"Valid_data_NHORARIOS_{INSTITUTION}.xlsx")
-    df_nhorarios_valid.to_excel(output_filename, index=False, sheet_name="NHORARIOS")
+    df_nhorarios_valid.to_excel(output_filename, index=False, sheet_name="NHORARIOS", freeze_panes=(1,0))
     logger.info(f"Dados finais guardados com sucesso em: {output_filename}")
     output_filename = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f"Invalid_data_NHORARIOS_{INSTITUTION}.xlsx")
-    df_nhorarios_invalid.to_excel(output_filename, index=False, sheet_name="NHORARIOS")
+    df_nhorarios_invalid.to_excel(output_filename, index=False, sheet_name="NHORARIOS", freeze_panes=(1,0))
     logger.info(f"Dados finais guardados com sucesso em: {output_filename}")
 
     logger.notice("--- FIM DO PROCESSO ---")
