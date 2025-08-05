@@ -7,13 +7,14 @@ from datetime import datetime
 def get_horarios(client, logger, ano_lectivo: int, periodos: list[int], suffix: str):
     """
     Chama o método GetDiscHorario para um ano letivo e uma lista de períodos.
-    Acumula os resultados e salva num único ficheiro Excel.
+    Acumula os resultados e salva num único ficheiro Excel, incluindo o CdPeriodo.
     """
     logger.info(f"Iniciando a extração de horários para o Ano Letivo: {ano_lectivo} e Períodos: {periodos}")
     
     all_horarios_df = pd.DataFrame()
     xml_responses = []
     
+    # Revertido para o original, sem pedir CdPeriodo, para evitar erros da API
     psaida_fields = 'CdTurma;DgTurma;DiaSemana;HoraIni;MinutoIni;HoraFim;MinutoFim;CdRegime;DgRegime;NmDocente;Sala;CdDocente;CdDis;NmDis;CdSala;CdPEstudo;AbrDis;CdCampus;CdEdificio;CdPiso;CdAulaFrequencia;DtProxima;CorHorarioWin32;IconRegime'
     columns = psaida_fields.split(';')
     field_mapping = {f'c{i+1}': col for i, col in enumerate(columns)}
@@ -35,9 +36,8 @@ def get_horarios(client, logger, ano_lectivo: int, periodos: list[int], suffix: 
             logger.debug(f"Chamando o método 'Execute' para GetDiscHorario com PEntrada: '{params['PEntrada']}'")
             response = client.service.Execute(**params)
 
-            # --- Verificação de resposta vazia ---
             if not response or "Não foi encontrado nenhum registo" in response:
-                logger.warning(f"Nenhum horário encontrado ou a API retornou 'Não foi encontrado nenhum registo.' para o período {periodo}. Continuando.")
+                logger.warning(f"Nenhum horário encontrado para o período {periodo}. Continuando.")
                 continue
 
             xml_responses.append(response)
@@ -47,7 +47,6 @@ def get_horarios(client, logger, ano_lectivo: int, periodos: list[int], suffix: 
             data = []
 
             for resultado in root.findall('.//resultado'):
-                # Pular registos que são na verdade mensagens de erro
                 if len(resultado) == 1 and resultado.find('c1') is not None and "Não foi encontrado nenhum registo" in resultado.find('c1').text:
                     continue
                 horario = {df_field: resultado.find(xml_field).text.strip() if resultado.find(xml_field) is not None and resultado.find(xml_field).text else '' for xml_field, df_field in field_mapping.items()}
@@ -55,6 +54,8 @@ def get_horarios(client, logger, ano_lectivo: int, periodos: list[int], suffix: 
             
             if data:
                 df_periodo = pd.DataFrame(data)
+                # --- LÓGICA CORRIGIDA: Adicionar o CdPeriodo manualmente ---
+                df_periodo['CdPeriodo'] = periodo
                 logger.info(f"Encontrados {len(df_periodo)} registos de horário válidos para o período {periodo}.")
                 all_horarios_df = pd.concat([all_horarios_df, df_periodo], ignore_index=True)
             else:
@@ -68,7 +69,13 @@ def get_horarios(client, logger, ano_lectivo: int, periodos: list[int], suffix: 
         all_horarios_df.drop_duplicates(inplace=True)
         logger.info(f"Total de registos de horário após remoção de duplicados: {len(all_horarios_df)}")
 
-        all_horarios_df.sort_values(by=['DgTurma','CdTurma'], inplace=True)
+        # Reordenar colunas para ter 'CdPeriodo' mais no início
+        if 'CdPeriodo' in all_horarios_df.columns:
+            cols_to_move = ['CdPeriodo', 'CdTurma', 'DgTurma']
+            remaining_cols = [col for col in all_horarios_df.columns if col not in cols_to_move]
+            all_horarios_df = all_horarios_df[cols_to_move + remaining_cols]
+        
+        all_horarios_df.sort_values(by=['CdPeriodo','DgTurma','CdTurma'], inplace=True)
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         

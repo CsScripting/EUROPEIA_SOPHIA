@@ -9,6 +9,8 @@ QA = "https://elpusonlinelisboaqa.ipam.pt/WebSAPI/websapi.asmx"
 # SOAP API Configuration
 # WSDL_URL = Europeia + "?WSDL"
 
+ID_CERTIFICADO = 9186205
+
 WSDL_URL = QA + "?WSDL"
 
 # Determina o sufixo com base no WSDL_URL
