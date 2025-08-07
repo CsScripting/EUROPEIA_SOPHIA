@@ -101,47 +101,48 @@ def main():
     if not PERIODOS_A_CONSULTAR:
         logger.error("Nenhum período válido para consulta foi determinado. A extração de dados dependentes será ignorada.")
 
-    # 2. Obter Cursos
-    logger.notice("--- Passo 2 de 6: A obter dados de Cursos ---")
-    try:
-        get_cursos(client=client, logger=logger, suffix=suffix)
-    except Exception as e:
-        logger.error(f"Ocorreu um erro inesperado ao chamar get_cursos: {e}", exc_info=True)
-
-    # 3. Obter Disciplinas (Módulos)
-    if PERIODOS_A_CONSULTAR:
-        logger.notice("--- Passo 3 de 6: A obter dados de Disciplinas ---")
+    if config.ALL_DATA:
+        # 2. Obter Cursos
+        logger.notice("--- Passo 2 de 6: A obter dados de Cursos ---")
         try:
-            get_disciplinas(
-                client=client,
-                logger=logger,
-                ano_lectivo=ANO_LECTIVO_A_CONSULTAR,
-                periodos=PERIODOS_A_CONSULTAR,
-                suffix=suffix
-            )
+            get_cursos(client=client, logger=logger, suffix=suffix)
         except Exception as e:
-            logger.error(f"Ocorreu um erro inesperado ao chamar get_disciplinas: {e}", exc_info=True)
+            logger.error(f"Ocorreu um erro inesperado ao chamar get_cursos: {e}", exc_info=True)
 
-    # 4. Obter Turmas (Grupos)
-    if PERIODOS_A_CONSULTAR:
-        logger.notice("--- Passo 4 de 6: A obter dados de Turmas ---")
+        # 3. Obter Disciplinas (Módulos)
+        if PERIODOS_A_CONSULTAR:
+            logger.notice("--- Passo 3 de 6: A obter dados de Disciplinas ---")
+            try:
+                get_disciplinas(
+                    client=client,
+                    logger=logger,
+                    ano_lectivo=ANO_LECTIVO_A_CONSULTAR,
+                    periodos=PERIODOS_A_CONSULTAR,
+                    suffix=suffix
+                )
+            except Exception as e:
+                logger.error(f"Ocorreu um erro inesperado ao chamar get_disciplinas: {e}", exc_info=True)
+
+        # 4. Obter Turmas (Grupos)
+        if PERIODOS_A_CONSULTAR:
+            logger.notice("--- Passo 4 de 6: A obter dados de Turmas ---")
+            try:
+                get_turmas(
+                    client=client,
+                    logger=logger,
+                    ano_lectivo=ANO_LECTIVO_A_CONSULTAR,
+                    periodos=PERIODOS_A_CONSULTAR, # Usando a lista dinâmica
+                    suffix=suffix
+                )
+            except Exception as e:
+                logger.error(f"Ocorreu um erro inesperado ao chamar get_turmas: {e}", exc_info=True)
+
+        # 5. Obter Docentes
+        logger.notice("--- Passo 5 de 6: A obter dados de Docentes ---")
         try:
-            get_turmas(
-                client=client,
-                logger=logger,
-                ano_lectivo=ANO_LECTIVO_A_CONSULTAR,
-                periodos=PERIODOS_A_CONSULTAR, # Usando a lista dinâmica
-                suffix=suffix
-            )
+            get_docentes(client=client, logger=logger, suffix=suffix)
         except Exception as e:
-            logger.error(f"Ocorreu um erro inesperado ao chamar get_turmas: {e}", exc_info=True)
-
-    # 5. Obter Docentes
-    logger.notice("--- Passo 5 de 6: A obter dados de Docentes ---")
-    try:
-        get_docentes(client=client, logger=logger, suffix=suffix)
-    except Exception as e:
-        logger.error(f"Ocorreu um erro inesperado ao chamar get_docentes: {e}", exc_info=True)
+            logger.error(f"Ocorreu um erro inesperado ao chamar get_docentes: {e}", exc_info=True)
 
     # 6. Obter Horários
     if PERIODOS_A_CONSULTAR:

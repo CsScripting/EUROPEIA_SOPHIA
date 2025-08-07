@@ -29,7 +29,7 @@ logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 # --- Variáveis de Controlo ---
 SOURCE_DATA_DIR = os.path.join("DATA_PROCESS")
 SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE = os.path.join(SOURCE_DATA_DIR, "DATA_UPDATE")
-NAME_FILE_SCHEDULES_SHOPIA = "df_events_FINAL_EU_2025_PRIMER.xlsx"
+NAME_FILE_SCHEDULES_SHOPIA = "NHORARIOS_FINAL_EU_2025_PRIMER.xlsx"
 ANO_LECTIVO = 2025 # Definir o ano letivo aqui
 
 '''

@@ -24,17 +24,12 @@ setup_colored_logging(log_file_path)
 redirect_stdout_stderr_to_log()
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
-# --- Variáveis de Controlo ---
-# Diretório onde os ficheiros de entrada estão localizados
-SOURCE_DATA_DIR_SCHEDULES_BEST = os.path.join("DATA_PROCESS", "SCHEDULES_BEST")
-NAME_FILE_SCHEDULES_BEST = "fetch_event_EU_2025_PRIMER.xlsx"
-
 # Padrões para encontrar os ficheiros mais recentes
 
 '''
 IDENTIFICAR FICHEIRO SAIDA
 '''
-INSTITUTION = "EU_2025_PRIMER"
+INSTITUTION = "QA_2025_PRIMER"
 
 '''
 ### DADOS DE ENTRADA ####:
@@ -63,7 +58,7 @@ SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE = os.path.join(SOURCE_DATA_DIR_SHOPIA, "DATA
 COURSES_FILE = "Cursos_QA.xlsx"
 DISCIPLINAS_FILE = "Disciplinas_QA_Ano2025.xlsx"
 TURMAS_FILE = "Turmas_QA_Ano2025.xlsx"
-PROFESSORES_FILE = "Docentes_QA_E_A_NCont_2025-08-05_12-53-05.xlsx"
+PROFESSORES_FILE = "Docentes_QA_E_A_NCont_2025-08-07_10-23-58.xlsx"
 NHORARIOS_FILE = "Horarios_QA_Ano2025.xlsx"
 
 
@@ -147,7 +142,7 @@ def main():
 
     df_nhorarios_valid, df_nhorarios_invalid = merge_nr_contab_n_horarios(df_nhorarios, df_professores)
 
-    # 6. Salvar o resultado final
+    # # 6. Salvar o resultado final
     output_filename = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f"Valid_data_NHORARIOS_{INSTITUTION}.xlsx")
     df_nhorarios_valid.to_excel(output_filename, index=False, sheet_name="NHORARIOS", freeze_panes=(1,0))
     logger.info(f"Dados finais guardados com sucesso em: {output_filename}")
@@ -155,7 +150,7 @@ def main():
     df_nhorarios_invalid.to_excel(output_filename, index=False, sheet_name="NHORARIOS", freeze_panes=(1,0))
     logger.info(f"Dados finais guardados com sucesso em: {output_filename}")
 
-    logger.notice("--- FIM DO PROCESSO ---")
+    # logger.notice("--- FIM DO PROCESSO ---")
 
 if __name__ == "__main__":
     main()

@@ -223,6 +223,7 @@ def merge_data_entities(df_events: pd.DataFrame, df_st_groups: pd.DataFrame, df_
     # merge PROFESSORES:
     df_professores_copy = df_professores[["NContabilistico", "NDocente"]].copy().drop_duplicates()
     df_professores_copy['ValidProfessor'] = 1
+    df_professores_copy['NDocente'] = df_professores_copy['NDocente'].astype(int).astype(str)
 
     df_merged = df_merged.astype({"NContabilistico": "str"})
     df_professores_copy = df_professores_copy.astype({"NContabilistico": "str"})
@@ -268,18 +269,25 @@ def merge_nr_contab_n_horarios(df_n_horarios: pd.DataFrame, df_teachers: pd.Data
     df_teachers_copy = df_teachers[["NDocente","NContabilistico" ]].copy().drop_duplicates()
     df_teachers_copy['ValidTeacher'] = 1
 
+    df_n_horarios['CdDocente'] = df_n_horarios['CdDocente'].replace('', np.nan)  # transforma string vazia em NaN
+    df_n_horarios['CdDocente'] = df_n_horarios['CdDocente'].fillna(0)
+    df_n_horarios['CdDocente'] = df_n_horarios['CdDocente'].astype(int).astype(str)
+
 
     df_n_horarios = df_n_horarios.rename(columns={"CdDocente": "NDocente"})
 
-    df_n_horarios= df_n_horarios.astype({"NDocente": "str"})
-    df_teachers_copy = df_teachers_copy.astype({"NDocente": "str"})
+    df_n_horarios['NDocente'] = df_n_horarios['NDocente'].astype(int).astype(str)
+    df_teachers_copy['NDocente'] = df_teachers_copy['NDocente'].astype(int).astype(str)
     df_n_horarios = pd.merge(df_n_horarios, df_teachers_copy, on=["NDocente"], how="left", indicator=True)
     matches_professores = len(df_n_horarios[df_n_horarios['_merge'] == 'both'])
     logger.notice(f"Merge PROFESSORES | N_HORARIOS: {matches_professores} Linhas encontradas.")
     df_n_horarios['ValidTeacher'] = np.where(df_n_horarios['_merge'] == 'left_only', 0, 1)
     df_n_horarios = df_n_horarios.drop(columns=['_merge'])
 
-    df_n_horarios_valid = df_n_horarios[df_n_horarios['ValidTeacher'] == 1].copy()
+    
+    df_n_horarios.loc[df_n_horarios['NDocente'] == '0', 'ValidTeacher'] = 1
+
+    df_n_horarios_valid = df_n_horarios[(df_n_horarios['ValidTeacher'] == 1)].copy()
     df_n_horarios_invalid = df_n_horarios[df_n_horarios['ValidTeacher'] == 0].copy()
 
     logger.info(f"NHORARIOS VALIDOS COM ({len(df_n_horarios_valid)} linhas).")
@@ -582,15 +590,28 @@ def edit_linha_horario(client, logger, df_horarios_shopia: pd.DataFrame, ano_lec
     error_count = 0
 
     # Filtra as linhas que precisam de atualização
+    ## CASOS NÂO FAZ UPDATE
+    # CASO 1 
     df_to_update = df_horarios_shopia[df_horarios_shopia['NovoProf'] != 'Keep'].copy()
+    # CASO 2
+    df_to_update = df_to_update[~((df_to_update['CdDocente'] == 0) & (df_to_update['NovoProf'].isna()) & (df_to_update['NovoProf'].str.strip() != ''))]
+    
+    ## CASOS FAZ UPDATE
     logger.info(f"Encontradas {len(df_to_update)} linhas para atualizar (excluindo 'Keep').")
 
 
     for index, row in df_to_update.iterrows():
-        # Ignorar linhas onde 'NovoProf' está vazio, pois não há docente para atribuir
+
+
+        ### DOIS CASOS CONSIDERADOS:
+        # # Ignorar linhas onde 'NovoProf' está vazio, pois não há docente para atribuir
+        # if pd.isna(row['NovoProf']) or row['NovoProf'] == '':
+        #     logger.warning(f"Linha {index + 1}: 'NovoProf' está vazio. A saltar a atualização.")
+        #     continue
         if pd.isna(row['NovoProf']) or row['NovoProf'] == '':
-            logger.warning(f"Linha {index + 1}: 'NovoProf' está vazio. A saltar a atualização.")
-            continue
+
+            row['NovoProf'] = 0
+       
         try:
             p_entrada = (
                 f"TpUtil=0;CdUtil=2029;PwdUtil=S1st3m0nl1ne#;"

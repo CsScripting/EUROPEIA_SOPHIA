@@ -9,9 +9,11 @@ QA = "https://elpusonlinelisboaqa.ipam.pt/WebSAPI/websapi.asmx"
 # SOAP API Configuration
 # WSDL_URL = Europeia + "?WSDL"
 
-ID_CERTIFICADO = 9186205
+ALL_DATA = True
 
-WSDL_URL = QA + "?WSDL"
+ID_CERTIFICADO = 91319247
+
+WSDL_URL = UE_IADE + "?WSDL"
 
 # Determina o sufixo com base no WSDL_URL
 if WSDL_URL == Europeia + "?WSDL":
@@ -30,7 +32,8 @@ else:
     print(f"AVISO: O WSDL_URL '{WSDL_URL}' não é um dos URLs pré-configurados. Foi usado o sufixo padrão '{suffix}'.")
 
 # Identity Server Configuration (Password Credentials Grant)
-IDENTITY_SERVER_URL = "https://bullet-is-qa.europeia.pt/connect/token" 
+# IDENTITY_SERVER_URL = "https://bullet-is-qa.europeia.pt/connect/token" 
+IDENTITY_SERVER_URL = "https://bullet-is.europeia.pt/connect/token" 
 
 CLIENT_ID = "Integration_2"
 CLIENT_SECRET = "bulletOPT2006!"
@@ -39,7 +42,8 @@ USERNAME = "admin@bulletsolutions.com"
 PASSWORD = "bulletOPT2006!"
 
 # API Configuration
-API_BASE_URL = "https://bullet-api-qa.europeia.pt/api"
+# API_BASE_URL = "https://bullet-api-qa.europeia.pt/api"
+API_BASE_URL = "https://bullet-api.europeia.pt/api"
 
 # Source Endpoints / Templates
 ACADEMIC_TERM_SEARCH_ENDPOINT = "/AcademicTerm/search" # Endpoint to search for AcademicTerm by name

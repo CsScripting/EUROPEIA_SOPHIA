@@ -30,15 +30,31 @@ logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 '''
 IDENTIFICAR FICHEIRO SAIDA
 '''
-INSTITUTION = "EU_2025_PRIMER"
+
+
+'''
+GUARDA:
+ ** BEST_MAP_NHORARIOS --> GUARDA RELAÇÂO DE DADOS ENTRE BEST E NHORARIOS
+    1- Existe Relação entre BEST e NHORARIOS
+    0 - Não existe Relação entre BEST e NHORARIOS
+
+** df_NHORARIOS_FINAL --> GUARDA DADOS DE NHORARIOS
+   DADOS SUJEITOS A PROCESSO DE UPDATE
+
+'''
+
+
+
+
+INSTITUTION = "IADE_2025_PRIMER"
 
 
 # --- Variáveis de Controlo ---
 SOURCE_DATA_DIR = os.path.join("DATA_PROCESS")
 SOURCE_DATA_DIR_SCHEDULES_BEST = os.path.join(SOURCE_DATA_DIR, "SCHEDULES_BEST")
 SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE = os.path.join(SOURCE_DATA_DIR, "DATA_UPDATE")
-NAME_FILE_SCHEDULES_BEST = "Valid_data_EU_2025_PRIMER.xlsx"
-NAME_FILE_SCHEDULES_SHOPIA = "Valid_data_NHORARIOS_EU_2025_PRIMER.xlsx"
+NAME_FILE_SCHEDULES_BEST = "Valid_data_IADE_2025_PRIMER.xlsx"
+NAME_FILE_SCHEDULES_SHOPIA = "Valid_data_NHORARIOS_IADE_2025_PRIMER.xlsx"
 
 def initialize_soap_client():
     """Inicializa e retorna o cliente SOAP com as configurações necessárias."""
@@ -93,8 +109,10 @@ def main():
 
     df_events_SHOPIA_FINAL = move_column_before_last_n(df_events_SHOPIA_FINAL, 'CdDocente', 6)
 
+    df_events_SHOPIA_FINAL ['NovoProf']= np.where(df_events_SHOPIA_FINAL['DSD_NR_BEST'] == 0, 'Keep', df_events_SHOPIA_FINAL['NovoProf'])
+
     # Guardar o DataFrame final em um novo ficheiro Excel
-    output_file_path = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f'df_NHORARIOS_FINAL_{INSTITUTION}.xlsx')
+    output_file_path = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f'NHORARIOS_FINAL_{INSTITUTION}.xlsx')
     df_events_SHOPIA_FINAL.to_excel(output_file_path, index=False, sheet_name="NHORARIOS", freeze_panes=(1,0))
     logger.info(f"O ficheiro final foi guardado em: {output_file_path}")
 
@@ -114,7 +132,7 @@ def main():
 
 
     # Guardar o DataFrame final em um novo ficheiro Excel
-    output_file_path = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f'df_BEST_MAP_NHORARIOS_{INSTITUTION}.xlsx')
+    output_file_path = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f'BEST_MAP_NHORARIOS_{INSTITUTION}.xlsx')
     df_events_BEST.to_excel(output_file_path, index=False, sheet_name="BEST_NHORARIOs", freeze_panes=(1,0))
     logger.info(f"O ficheiro final foi guardado em: {output_file_path}")
 
