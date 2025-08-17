@@ -11,7 +11,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
     from src.utils.setup_logging import setup_colored_logging, redirect_stdout_stderr_to_log
-    from src.core.event_processor_europeia import edit_linha_horario
+    # Importar as funções refatoradas
+    from GET_DATA.get_periodos import get_periodos
+    from src.core.event_processor_europeia import get_nhorario_put_linha_horario
     import config
     from config import suffix
 except ImportError as e:
@@ -20,7 +22,7 @@ except ImportError as e:
 
 # --- Configuração do Logging ---
 log_dir = "LOGS"
-log_file_name = f"edit_linha_horario_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+log_file_name = f"checkput_linha_horario_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 log_file_path = os.path.join(log_dir, log_file_name)
 setup_colored_logging(log_file_path)
 redirect_stdout_stderr_to_log()
@@ -37,7 +39,7 @@ INSTITUTION_TO_PREFIX = {
 
 # Variáveis de controle
 ano_semestre = "2025_PRIMER"
-ANO_LECTIVO = 2025  # Definir o ano letivo aqui para a FUNÇÂO DE EDITAR LINHA DE HORÁRIO
+ANO_LECTIVO = 2025  # Definir o ano letivo aqui para a FUNÇÃO DE PUT LINHA DE HORÁRIO
 
 # Obter o prefixo correto para o nome do arquivo
 FILE_PREFIX = INSTITUTION_TO_PREFIX.get(config.INSTITUTION, config.INSTITUTION)
@@ -47,11 +49,13 @@ DATA_PROCESS_DIR = "DATA_PROCESS"
 INSTITUTION_DIR = os.path.join(DATA_PROCESS_DIR, FILE_PREFIX)
 
 # Diretórios de entrada/saída
+VALIDATION_DATA_BEST_DIR = os.path.join(INSTITUTION_DIR, "VALIDATION_DATA_BEST")
 VALIDATION_DATA_SOPHIA_DIR = os.path.join(INSTITUTION_DIR, "VALIDATION_DATA_SOPHIA")
+os.makedirs(VALIDATION_DATA_BEST_DIR, exist_ok=True)
 os.makedirs(VALIDATION_DATA_SOPHIA_DIR, exist_ok=True)
 
 # Nome do arquivo de entrada
-NAME_FILE_SCHEDULES_SHOPIA = f"NHORARIOS_FINAL_MAPPING_{FILE_PREFIX}_{ano_semestre}.xlsx"
+NAME_FILE_SCHEDULES_SHOPIA = f"BEST_MAP_NHORARIOS_{FILE_PREFIX}_{ano_semestre}.xlsx"
 
 def initialize_soap_client():
     """Inicializa e retorna o cliente SOAP com as configurações necessárias."""
@@ -67,10 +71,10 @@ def initialize_soap_client():
 
 def load_dataframes():
     """
-    Carrega os ficheiros de dados necessários da pasta VALIDATION_DATA_SOPHIA.
+    Carrega os ficheiros de dados necessários da pasta VALIDATION_DATA_BEST.
     """
     
-    df_horarios_shopia = pd.read_excel(os.path.join(VALIDATION_DATA_SOPHIA_DIR, NAME_FILE_SCHEDULES_SHOPIA), sheet_name="NHORARIOS")
+    df_horarios_shopia = pd.read_excel(os.path.join(VALIDATION_DATA_BEST_DIR, NAME_FILE_SCHEDULES_SHOPIA), sheet_name="BEST_NHORARIOS")
     logger.info(f"DataFrame de horários da SHOPIA carregado com sucesso ({len(df_horarios_shopia)} linhas).")
     
     return df_horarios_shopia
@@ -78,9 +82,10 @@ def load_dataframes():
 
 def main():
     """
-    Função principal para EDITAR linha de Horario.
+    Função principal para Inserir linha de Horario.
     """
-    logger.notice("--- INÍCIO DO PROCESSO DE ATUALIZAÇÃO DE LINHAS DE HORÁRIO NA SHOPIA ---")
+    logger.notice("--- INÍCIO DO PROCESSO DE INSERÇÃO DE LINHAS DE HORÁRIO NA SHOPIA ---")
+
 
     # 1. Inicializar cliente SOAP
     client = initialize_soap_client()
@@ -89,19 +94,20 @@ def main():
         return
 
     # 2. Carregar os dados
-    df_horarios_shopia = load_dataframes()
+    df_horarios_best_to_insert = load_dataframes()
     
-    # 3. Chamar a função para editar as linhas de horário
-    df_horarios_atualizado = edit_linha_horario(client, logger, df_horarios_shopia, ano_lectivo=ANO_LECTIVO)
+    # 3. Chamar a função para filtrar e inserir as linhas de horário
+    df_horarios_filtrado = get_nhorario_put_linha_horario(client, logger, df_horarios_best_to_insert, ano_lectivo=ANO_LECTIVO)
 
-    # 4. Guardar o DataFrame com as respostas da atualização
-    output_filename = f"UPDATED_NHORARIOS_FINAL_{FILE_PREFIX}_{ano_semestre}.xlsx"
+    # 4. Guardar o DataFrame com as linhas filtradas
+    output_filename = f"TO_INSERT_NHORARIOS_{FILE_PREFIX}_{ano_semestre}.xlsx"
     output_filepath = os.path.join(VALIDATION_DATA_SOPHIA_DIR, output_filename)
-    df_horarios_atualizado.to_excel(output_filepath, index=False, sheet_name="UpdatedHorarios", freeze_panes=(1,0))
-    logger.info(f"Processo concluído. Ficheiro com resultados da atualização guardado em: {output_filepath}")
-
+    df_horarios_filtrado.to_excel(output_filepath, index=False, sheet_name="HorariosToInsert", freeze_panes=(1,0))
+    logger.info(f"Processo concluído. Ficheiro com horários a inserir guardado em: {output_filepath}")
 
     logger.notice("--- FIM DO PROCESSO ---")
 
 if __name__ == "__main__":
     main()
+
+

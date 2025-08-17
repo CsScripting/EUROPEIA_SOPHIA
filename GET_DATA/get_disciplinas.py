@@ -82,12 +82,16 @@ def get_disciplinas(client, logger, ano_lectivo: int, periodos: list[int], suffi
         df = pd.DataFrame(all_disciplinas_data)
         logger.info(f"Total de {len(df)} disciplinas consolidadas de todos os períodos.")
 
-        output_dir = "DATA_PROCESS"
-        os.makedirs(output_dir, exist_ok=True)
-        excel_filename = f"Disciplinas_{suffix}_Ano{ano_lectivo}.xlsx"
-        excel_filepath = os.path.join(output_dir, excel_filename)
+        # Usar o caminho DATA_PROCESS/INSTITUTION/DATA_SOPHIA
+        data_process_dir = "DATA_PROCESS"
+        institution_dir = os.path.join(data_process_dir, suffix)  # Usa o sufixo da instituição (ex: EU para QA)
+        data_sophia_dir = os.path.join(institution_dir, "DATA_SOPHIA")
+        os.makedirs(data_sophia_dir, exist_ok=True)
 
-        df.to_excel(excel_filepath, index=False, sheet_name="Disciplinas")
+        excel_filename = f"Disciplinas_{suffix}_Ano{ano_lectivo}.xlsx"
+        excel_filepath = os.path.join(data_sophia_dir, excel_filename)
+
+        df.to_excel(excel_filepath, index=False, sheet_name="Disciplinas", freeze_panes=(1,0))
         
         logger.info(f"Arquivo Excel consolidado gerado com sucesso em: {excel_filepath}")
         return df

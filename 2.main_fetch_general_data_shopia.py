@@ -21,6 +21,7 @@ try:
     from GET_DATA.get_turmas import get_turmas
     from GET_DATA.get_docentes import get_docentes
     from GET_DATA.get_horarios import get_horarios
+    from GET_DATA.get_ano_curr import get_ano_curr
 except ImportError as e:
     print(f"Erro de importação: {e}. Verifique se o PYTHONPATH está configurado ou se está a executar a partir da raiz.")
     sys.exit(1)
@@ -39,6 +40,25 @@ logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 ANO_LECTIVO_A_CONSULTAR = 2025
 # Defina o semestre a consultar: 1 para o primeiro, 2 para o segundo
 PERIODO_SEMESTRE = 1 
+
+# Mapeamento de instituição para prefixo do arquivo
+INSTITUTION_TO_PREFIX = {
+    'QA': 'QA',
+    'Europeia': 'EU',
+    'UE_IADE': 'IADE',
+    'IPAM_Porto': 'IPAM_POR',
+    'IPAM_Lisboa': 'IPAM_LIS'
+}
+
+# Obter o prefixo correto para o nome do arquivo
+FILE_PREFIX = INSTITUTION_TO_PREFIX.get(config.INSTITUTION, config.INSTITUTION)
+
+# --- Setup Output Directories ---
+DATA_PROCESS_DIR = "DATA_PROCESS"
+INSTITUTION_DIR = os.path.join(DATA_PROCESS_DIR, FILE_PREFIX)  # Usa o sufixo da instituição (ex: EU para QA)
+DATA_SOPHIA_DIR = os.path.join(INSTITUTION_DIR, "DATA_SOPHIA")
+# Criar estrutura de diretórios
+os.makedirs(DATA_SOPHIA_DIR, exist_ok=True)
 
 
 def initialize_soap_client():
@@ -93,67 +113,73 @@ def main():
         logger.error("A extração não pode continuar sem um cliente SOAP válido. A terminar.")
         return
 
-    # 1. Obter Períodos e determinar quais consultar
-    logger.notice("--- Passo 1 de 6: A obter dados de Períodos ---")
-    periodos_df = get_periodos(client=client, logger=logger, suffix=suffix)
+    # 1. Obter Anos Curriculares
+    logger.notice("--- Passo 1 de 7: A obter dados de Anos Curriculares ---")
+    anos_curr_df = get_ano_curr(client=client, logger=logger, suffix=suffix)
+    if anos_curr_df is None:
+        logger.error("Falha ao obter anos curriculares. Continuando com os outros dados...")
+
+    # 2. Obter Períodos e determinar quais consultar
+    logger.notice("--- Passo 2 de 7: A obter dados de Períodos ---")
+    periodos_df = get_periodos(client=client, logger=logger, suffix=FILE_PREFIX)
     
     PERIODOS_A_CONSULTAR = get_periodos_para_consulta(periodos_df, PERIODO_SEMESTRE)
     if not PERIODOS_A_CONSULTAR:
         logger.error("Nenhum período válido para consulta foi determinado. A extração de dados dependentes será ignorada.")
 
     if config.ALL_DATA:
-        # 2. Obter Cursos
-        logger.notice("--- Passo 2 de 6: A obter dados de Cursos ---")
+        # 3. Obter Cursos
+        logger.notice("--- Passo 3 de 7: A obter dados de Cursos ---")
         try:
-            get_cursos(client=client, logger=logger, suffix=suffix)
+            get_cursos(client=client, logger=logger, suffix=FILE_PREFIX)
         except Exception as e:
             logger.error(f"Ocorreu um erro inesperado ao chamar get_cursos: {e}", exc_info=True)
 
         # 3. Obter Disciplinas (Módulos)
         if PERIODOS_A_CONSULTAR:
-            logger.notice("--- Passo 3 de 6: A obter dados de Disciplinas ---")
+            logger.notice("--- Passo 4 de 7: A obter dados de Disciplinas ---")
             try:
                 get_disciplinas(
                     client=client,
                     logger=logger,
                     ano_lectivo=ANO_LECTIVO_A_CONSULTAR,
                     periodos=PERIODOS_A_CONSULTAR,
-                    suffix=suffix
+                    suffix=FILE_PREFIX
                 )
             except Exception as e:
                 logger.error(f"Ocorreu um erro inesperado ao chamar get_disciplinas: {e}", exc_info=True)
 
         # 4. Obter Turmas (Grupos)
         if PERIODOS_A_CONSULTAR:
-            logger.notice("--- Passo 4 de 6: A obter dados de Turmas ---")
+            logger.notice("--- Passo 5 de 7: A obter dados de Turmas ---")
             try:
                 get_turmas(
                     client=client,
                     logger=logger,
                     ano_lectivo=ANO_LECTIVO_A_CONSULTAR,
                     periodos=PERIODOS_A_CONSULTAR, # Usando a lista dinâmica
-                    suffix=suffix
+                    suffix=FILE_PREFIX
                 )
             except Exception as e:
                 logger.error(f"Ocorreu um erro inesperado ao chamar get_turmas: {e}", exc_info=True)
 
         # 5. Obter Docentes
-        logger.notice("--- Passo 5 de 6: A obter dados de Docentes ---")
+        logger.notice("--- Passo 6 de 7: A obter dados de Docentes ---")
         try:
-            get_docentes(client=client, logger=logger, suffix=suffix)
+            get_docentes(client=client, logger=logger, suffix=FILE_PREFIX)
         except Exception as e:
             logger.error(f"Ocorreu um erro inesperado ao chamar get_docentes: {e}", exc_info=True)
 
     # 6. Obter Horários
     if PERIODOS_A_CONSULTAR:
-        logger.notice("--- Passo 6 de 6: A obter dados de Horários ---")
+        logger.notice("--- Passo 7 de 7: A obter dados de Horários ---")
         try:
             get_horarios(
                 client=client,
                 logger=logger,
                 ano_lectivo=ANO_LECTIVO_A_CONSULTAR,
                 periodos=PERIODOS_A_CONSULTAR,
-                suffix=suffix
+                suffix=FILE_PREFIX
             )
         except Exception as e:
             logger.error(f"Ocorreu um erro inesperado ao chamar get_horarios: {e}", exc_info=True)

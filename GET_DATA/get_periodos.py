@@ -54,10 +54,16 @@ def get_periodos(client, logger, suffix):
         logger.info(f"{len(df)} períodos processados.")
 
         # --- Salvar DataFrame em Excel ---
-        excel_filename = f"Periodos_{suffix}.xlsx"
-        excel_filepath = os.path.join("DATA_PROCESS", excel_filename)
+        # Usar o caminho DATA_PROCESS/INSTITUTION/DATA_SOPHIA
+        data_process_dir = "DATA_PROCESS"
+        institution_dir = os.path.join(data_process_dir, suffix)  # Usa o sufixo da instituição (ex: EU para QA)
+        data_sophia_dir = os.path.join(institution_dir, "DATA_SOPHIA")
+        os.makedirs(data_sophia_dir, exist_ok=True)
 
-        df.to_excel(excel_filepath, index=False, sheet_name="Periodos")
+        excel_filename = f"Periodos_{suffix}.xlsx"
+        excel_filepath = os.path.join(data_sophia_dir, excel_filename)
+
+        df.to_excel(excel_filepath, index=False, sheet_name="Periodos", freeze_panes=(1,0))
         logger.info(f"Arquivo Excel gerado com sucesso em: {excel_filepath}")
         
         # Retorna o DataFrame para ser usado no script principal

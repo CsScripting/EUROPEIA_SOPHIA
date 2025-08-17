@@ -42,6 +42,7 @@ ENDPOINTS_TO_ANALYZE = [
     'GetDocentes', 
     'GetCursos',
     'GetAnosLect',
+    'GetAnoCurr',
     'GetPeriodos',
     'GetCursos',
     'GetPEstudos',

@@ -85,12 +85,18 @@ def get_cursos(client, logger, suffix):
         logger.info(f"{len(df)} cursos processados.")
 
         # --- 5. Salvar DataFrame em Excel com Múltiplas Abas ---
+        # Usar o caminho DATA_PROCESS/INSTITUTION/DATA_SOPHIA
+        data_process_dir = "DATA_PROCESS"
+        institution_dir = os.path.join(data_process_dir, suffix)  # Usa o sufixo da instituição (ex: EU para QA)
+        data_sophia_dir = os.path.join(institution_dir, "DATA_SOPHIA")
+        os.makedirs(data_sophia_dir, exist_ok=True)
+
         excel_filename = f"Cursos_{suffix}.xlsx"
-        excel_filepath = os.path.join("DATA_PROCESS", excel_filename)
+        excel_filepath = os.path.join(data_sophia_dir, excel_filename)
 
         with pd.ExcelWriter(excel_filepath, engine='openpyxl') as writer:
-            df.to_excel(writer, sheet_name='Todos_Cursos', index=False)
-            df[df['Estado'] == 'A'].to_excel(writer, sheet_name='Cursos_Ativos', index=False)
+            df.to_excel(writer, sheet_name='Todos_Cursos', index=False, freeze_panes=(1,0))
+            df[df['Estado'] == 'A'].to_excel(writer, sheet_name='Cursos_Ativos', index=False, freeze_panes=(1,0))
             
             if 'TpCurso' in df.columns:
                 stats_tipo = df.groupby('TpCurso').agg(
@@ -98,14 +104,14 @@ def get_cursos(client, logger, suffix):
                     Cursos_Ativos=('Estado', lambda x: (x == 'A').sum())
                 ).reset_index()
                 stats_tipo['Cursos_Inativos'] = stats_tipo['Total_Cursos'] - stats_tipo['Cursos_Ativos']
-                stats_tipo.to_excel(writer, sheet_name='Estatisticas_Tipo_Curso', index=False)
+                stats_tipo.to_excel(writer, sheet_name='Estatisticas_Tipo_Curso', index=False, freeze_panes=(1,0))
 
             if 'NAnos_Num' in df.columns and df['NAnos_Num'].sum() > 0:
                 stats_duracao = df[df['NAnos_Num'] > 0].groupby('NAnos_Num').agg(
                     Total_Cursos=('CdCurso', 'count'),
                     Cursos_Ativos=('Estado', lambda x: (x == 'A').sum())
                 ).reset_index()
-                stats_duracao.to_excel(writer, sheet_name='Estatisticas_Duracao', index=False)
+                stats_duracao.to_excel(writer, sheet_name='Estatisticas_Duracao', index=False, freeze_panes=(1,0))
         
         logger.info(f"Arquivo Excel detalhado gerado com sucesso em: {excel_filepath}")
         return True

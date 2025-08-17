@@ -10,7 +10,6 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
     from src.utils.setup_logging import setup_colored_logging, redirect_stdout_stderr_to_log
-    from src.core.constants import OUTPUT_FILES_DIR
     from src.core.event_processor_europeia import filter_columns_best_events, split_data_st_groups, rename_columns, merge_data_entities, split_data_teachers, merge_nr_contab_n_horarios
 except ImportError as e:
     print(f"Erro de importação: {e}. Certifique-se de que o script está na raiz do projeto.")
@@ -24,12 +23,19 @@ setup_colored_logging(log_file_path)
 redirect_stdout_stderr_to_log()
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
+# --- Import config ---
+import config
+
 # Padrões para encontrar os ficheiros mais recentes
 
 '''
 IDENTIFICAR FICHEIRO SAIDA
+
+
 '''
-INSTITUTION = "QA_2025_PRIMER"
+
+ano_semestre = "2025_PRIMER"
+INSTITUTION_NAME_FILE = config.INSTITUTION + "_" + ano_semestre
 
 '''
 ### DADOS DE ENTRADA ####:
@@ -46,35 +52,58 @@ INSTITUTION = "QA_2025_PRIMER"
 
 '''
 
-## DADOS BEST
-SOURCE_DATA_DIR_SCHEDULES_BEST = os.path.join("DATA_PROCESS", "SCHEDULES_BEST")
-NAME_FILE_SCHEDULES_BEST = "fetch_event_EU_2025_PRIMER.xlsx"
+# Setup das pastas base
+DATA_PROCESS_DIR = "DATA_PROCESS"
 
+# Mapeamento de instituição para prefixo do arquivo
+INSTITUTION_TO_PREFIX = {
+    'QA': 'QA',
+    'Europeia': 'EU',
+    'UE_IADE': 'IADE',
+    'IPAM_Porto': 'IPAM_POR',
+    'IPAM_Lisboa': 'IPAM_LIS'
+}
 
+# Obter o prefixo correto para o nome do arquivo
+FILE_PREFIX = INSTITUTION_TO_PREFIX.get(config.INSTITUTION, config.INSTITUTION)
 
-## DADOS SHOPIA
-SOURCE_DATA_DIR_SHOPIA = os.path.join("DATA_PROCESS")
-SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE = os.path.join(SOURCE_DATA_DIR_SHOPIA, "DATA_UPDATE")
-COURSES_FILE = "Cursos_QA.xlsx"
-DISCIPLINAS_FILE = "Disciplinas_QA_Ano2025.xlsx"
-TURMAS_FILE = "Turmas_QA_Ano2025.xlsx"
-PROFESSORES_FILE = "Docentes_QA_E_A_NCont_2025-08-07_10-23-58.xlsx"
-NHORARIOS_FILE = "Horarios_QA_Ano2025.xlsx"
+# Usar FILE_PREFIX para a estrutura de pastas
+INSTITUTION_DIR = os.path.join(DATA_PROCESS_DIR, FILE_PREFIX)
+
+## DADOS BEST - Nova estrutura
+DATA_BEST_DIR = os.path.join(INSTITUTION_DIR, "DATA_BEST")
+# Exceção: Ao ler de DATA_BEST quando é QA, usar EU
+NAME_FILE_SCHEDULES_BEST = f"fetch_event_{'EU' if config.INSTITUTION == 'QA' else FILE_PREFIX}_{ano_semestre}.xlsx"
+
+## DADOS SOPHIA - Nova estrutura
+DATA_SOPHIA_DIR = os.path.join(INSTITUTION_DIR, "DATA_SOPHIA")
+COURSES_FILE = f"Cursos_{FILE_PREFIX}.xlsx"
+DISCIPLINAS_FILE = f"Disciplinas_{FILE_PREFIX}_Ano2025.xlsx"
+TURMAS_FILE = f"Turmas_{FILE_PREFIX}_Ano2025.xlsx"
+PROFESSORES_FILE = f"Docentes_{FILE_PREFIX}_E_A_NCont.xlsx"
+NHORARIOS_FILE = f"Horarios_{FILE_PREFIX}_Ano2025.xlsx"
+
+## PASTAS DE SAÍDA
+VALIDATION_DATA_BEST_DIR = os.path.join(INSTITUTION_DIR, "VALIDATION_DATA_BEST")
+VALIDATION_DATA_SOPHIA_DIR = os.path.join(INSTITUTION_DIR, "VALIDATION_DATA_SOPHIA")
+
+# Criar estrutura de diretórios
+os.makedirs(VALIDATION_DATA_BEST_DIR, exist_ok=True)
+os.makedirs(VALIDATION_DATA_SOPHIA_DIR, exist_ok=True)
 
 
 def load_dataframes():
     """
-    Carrega os ficheiros de dados mais recentes da pasta DATA_PROCESS para DataFrames.
+    Carrega os ficheiros de dados das pastas DATA_BEST e DATA_SOPHIA para DataFrames.
     """
     
-
     # Carregar os DataFrames
-    df_events = pd.read_excel(os.path.join(SOURCE_DATA_DIR_SCHEDULES_BEST, NAME_FILE_SCHEDULES_BEST), sheet_name="Viewer_Events")
-    df_courses = pd.read_excel(os.path.join(SOURCE_DATA_DIR_SHOPIA, COURSES_FILE), sheet_name="Cursos_Ativos")
-    df_disciplinas = pd.read_excel(os.path.join(SOURCE_DATA_DIR_SHOPIA, DISCIPLINAS_FILE), sheet_name="Disciplinas")
-    df_turmas = pd.read_excel(os.path.join(SOURCE_DATA_DIR_SHOPIA, TURMAS_FILE) , sheet_name="Turmas")
-    df_professores = pd.read_excel(os.path.join(SOURCE_DATA_DIR_SHOPIA, PROFESSORES_FILE) , sheet_name="Docentes_Com_NContabilistico")
-    df_nhorarios = pd.read_excel(os.path.join(SOURCE_DATA_DIR_SHOPIA, NHORARIOS_FILE) , sheet_name="Horarios")
+    df_events = pd.read_excel(os.path.join(DATA_BEST_DIR, NAME_FILE_SCHEDULES_BEST), sheet_name="Viewer_Events")
+    df_courses = pd.read_excel(os.path.join(DATA_SOPHIA_DIR, COURSES_FILE), sheet_name="Cursos_Ativos")
+    df_disciplinas = pd.read_excel(os.path.join(DATA_SOPHIA_DIR, DISCIPLINAS_FILE), sheet_name="Disciplinas")
+    df_turmas = pd.read_excel(os.path.join(DATA_SOPHIA_DIR, TURMAS_FILE), sheet_name="Turmas")
+    df_professores = pd.read_excel(os.path.join(DATA_SOPHIA_DIR, PROFESSORES_FILE), sheet_name="Docentes_Com_NContabilistico")
+    df_nhorarios = pd.read_excel(os.path.join(DATA_SOPHIA_DIR, NHORARIOS_FILE), sheet_name="Horarios")
 
 
     # Logging dos resultados
@@ -131,22 +160,22 @@ def main():
 
     
 
-    # 6. Salvar o resultado final
-    output_filename = os.path.join(SOURCE_DATA_DIR_SCHEDULES_BEST, f"Valid_data_{INSTITUTION}.xlsx")
+    # 6. Salvar o resultado final - VALIDATION_DATA_BEST
+    output_filename = os.path.join(VALIDATION_DATA_BEST_DIR, f"Valid_data_BEST_{INSTITUTION_NAME_FILE}.xlsx")
     df_merged_valid_events.to_excel(output_filename, index=False, sheet_name="MergedData_Valid", freeze_panes=(1,0))
     logger.info(f"Dados finais guardados com sucesso em: {output_filename}")
-    output_filename = os.path.join(SOURCE_DATA_DIR_SCHEDULES_BEST, f"Invalid_data_{INSTITUTION}.xlsx")
+    output_filename = os.path.join(VALIDATION_DATA_BEST_DIR, f"Invalid_data_BEST_{INSTITUTION_NAME_FILE}.xlsx")
     df_merged_invalid_events.to_excel(output_filename, index=False, sheet_name="MergedData_Invalid", freeze_panes=(1,0))
     logger.info(f"Dados finais guardados com sucesso em: {output_filename}")
 
 
     df_nhorarios_valid, df_nhorarios_invalid = merge_nr_contab_n_horarios(df_nhorarios, df_professores)
 
-    # # 6. Salvar o resultado final
-    output_filename = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f"Valid_data_NHORARIOS_{INSTITUTION}.xlsx")
+    # 7. Salvar o resultado final - VALIDATION_DATA_SOPHIA
+    output_filename = os.path.join(VALIDATION_DATA_SOPHIA_DIR, f"Valid_data_NHORARIOS_{INSTITUTION_NAME_FILE}.xlsx")
     df_nhorarios_valid.to_excel(output_filename, index=False, sheet_name="NHORARIOS", freeze_panes=(1,0))
     logger.info(f"Dados finais guardados com sucesso em: {output_filename}")
-    output_filename = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f"Invalid_data_NHORARIOS_{INSTITUTION}.xlsx")
+    output_filename = os.path.join(VALIDATION_DATA_SOPHIA_DIR, f"Invalid_data_NHORARIOS_{INSTITUTION_NAME_FILE}.xlsx")
     df_nhorarios_invalid.to_excel(output_filename, index=False, sheet_name="NHORARIOS", freeze_panes=(1,0))
     logger.info(f"Dados finais guardados com sucesso em: {output_filename}")
 

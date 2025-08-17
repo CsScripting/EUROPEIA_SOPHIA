@@ -71,21 +71,25 @@ def get_docentes(client, logger, suffix: str, estado: str = 'A'):
         df = pd.DataFrame(docentes_data)
         logger.info(f"{len(df)} docentes processados.")
 
-        output_dir = "DATA_PROCESS"
-        os.makedirs(output_dir, exist_ok=True)
+        # Usar o caminho DATA_PROCESS/INSTITUTION/DATA_SOPHIA
+        data_process_dir = "DATA_PROCESS"
+        institution_dir = os.path.join(data_process_dir, suffix)  # Usa o sufixo da instituição (ex: EU para QA)
+        data_sophia_dir = os.path.join(institution_dir, "DATA_SOPHIA")
+        os.makedirs(data_sophia_dir, exist_ok=True)
+        
         excel_filename = f"Docentes_{suffix}_Estado_{estado}.xlsx"
-        excel_filepath = os.path.join(output_dir, excel_filename)
+        excel_filepath = os.path.join(data_sophia_dir, excel_filename)
 
-        df.to_excel(excel_filepath, index=False, sheet_name='Docentes')
+        df.to_excel(excel_filepath, index=False, sheet_name='Docentes', freeze_panes=(1,0))
         logger.info(f"Arquivo Excel com todos os docentes gerado com sucesso em: {excel_filepath}")
 
         df_com_ncont = df.dropna(subset=['NContabilistico'])
         df_com_ncont = df_com_ncont[df_com_ncont['NContabilistico'].str.strip() != '']
 
         if not df_com_ncont.empty:
-            excel_filename_ncont = f"Docentes_{suffix}_E_{estado}_NCont_{timestamp}.xlsx"
-            excel_filepath_ncont = os.path.join(output_dir, excel_filename_ncont)
-            df_com_ncont.to_excel(excel_filepath_ncont, index=False, sheet_name='Docentes_Com_NContabilistico')
+            excel_filename_ncont = f"Docentes_{suffix}_E_{estado}_NCont.xlsx"
+            excel_filepath_ncont = os.path.join(data_sophia_dir, excel_filename_ncont)
+            df_com_ncont.to_excel(excel_filepath_ncont, index=False, sheet_name='Docentes_Com_NContabilistico', freeze_panes=(1,0))
             logger.info(f"Arquivo Excel filtrado por NContabilistico gerado com sucesso em: {excel_filepath_ncont}")
         else:
             logger.warning("Nenhum docente com NContabilistico encontrado para guardar no ficheiro filtrado.")

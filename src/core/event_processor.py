@@ -20,9 +20,7 @@ except ModuleNotFoundError:
     from src.core import data_processor
     from src.core.data_processor import _extract_and_concat, _extract_nested_and_concat # Import helpers
     from src.core import constants 
-    from src.core.constants import ( 
-        OUTPUT_EVENT_OPERATIONS_EXCEL_FILENAME, 
-    )
+    
     from src.api.client import ApiClient
     from src.entities.event.dto import EventApiDTO, EventViewerDTO
     

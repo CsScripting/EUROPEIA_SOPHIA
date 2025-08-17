@@ -44,17 +44,44 @@ GUARDA:
 '''
 
 
+'''
+IDENTIFICAR FICHEIRO SAIDA
+'''
+# Mapeamento de instituição para prefixo do arquivo
+INSTITUTION_TO_PREFIX = {
+    'QA': 'QA',
+    'Europeia': 'EU',
+    'UE_IADE': 'IADE',
+    'IPAM_Porto': 'IPAM_POR',
+    'IPAM_Lisboa': 'IPAM_LIS'
+}
+
+ano_semestre = "2025_PRIMER"
+# Obter o prefixo correto para o nome do arquivo
+FILE_PREFIX = INSTITUTION_TO_PREFIX.get(config.INSTITUTION, config.INSTITUTION)
 
 
-INSTITUTION = "IADE_2025_PRIMER"
 
 
-# --- Variáveis de Controlo ---
-SOURCE_DATA_DIR = os.path.join("DATA_PROCESS")
-SOURCE_DATA_DIR_SCHEDULES_BEST = os.path.join(SOURCE_DATA_DIR, "SCHEDULES_BEST")
-SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE = os.path.join(SOURCE_DATA_DIR, "DATA_UPDATE")
-NAME_FILE_SCHEDULES_BEST = "Valid_data_IADE_2025_PRIMER.xlsx"
-NAME_FILE_SCHEDULES_SHOPIA = "Valid_data_NHORARIOS_IADE_2025_PRIMER.xlsx"
+# --- Setup Output Directories ---
+DATA_PROCESS_DIR = "DATA_PROCESS"
+INSTITUTION_DIR = os.path.join(DATA_PROCESS_DIR, FILE_PREFIX)
+
+# Diretórios de entrada
+DATA_BEST_DIR = os.path.join(INSTITUTION_DIR, "DATA_BEST")
+DATA_SOPHIA_DIR = os.path.join(INSTITUTION_DIR, "DATA_SOPHIA")
+
+# Diretórios de saída
+VALIDATION_DATA_BEST_DIR = os.path.join(INSTITUTION_DIR, "VALIDATION_DATA_BEST")
+VALIDATION_DATA_SOPHIA_DIR = os.path.join(INSTITUTION_DIR, "VALIDATION_DATA_SOPHIA")
+
+# Criar estrutura de diretórios
+os.makedirs(VALIDATION_DATA_BEST_DIR, exist_ok=True)
+os.makedirs(VALIDATION_DATA_SOPHIA_DIR, exist_ok=True)
+
+# Nomes dos arquivos
+NAME_FILE_SCHEDULES_BEST = f"Valid_data_BEST_{FILE_PREFIX}_{ano_semestre}.xlsx"
+NAME_FILE_SCHEDULES_SHOPIA = f"Valid_data_NHORARIOS_{FILE_PREFIX}_{ano_semestre}.xlsx"
 
 def initialize_soap_client():
     """Inicializa e retorna o cliente SOAP com as configurações necessárias."""
@@ -70,12 +97,12 @@ def initialize_soap_client():
 
 def load_dataframes():
     """
-    Carrega os ficheiros de dados necessários da pasta DATA_PROCESS.
+    Carrega os ficheiros de dados necessários das pastas VALIDATION_DATA_BEST e VALIDATION_DATA_SOPHIA.
     """
-    df_events_BEST = pd.read_excel(os.path.join(SOURCE_DATA_DIR_SCHEDULES_BEST, NAME_FILE_SCHEDULES_BEST), sheet_name="MergedData_Valid")
+    df_events_BEST = pd.read_excel(os.path.join(VALIDATION_DATA_BEST_DIR, NAME_FILE_SCHEDULES_BEST), sheet_name="MergedData_Valid")
     logger.info(f"DataFrame de eventos BEST carregado com sucesso ({len(df_events_BEST)} linhas).")
     
-    df_horarios_shopia = pd.read_excel(os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, NAME_FILE_SCHEDULES_SHOPIA), sheet_name="NHORARIOS")
+    df_horarios_shopia = pd.read_excel(os.path.join(VALIDATION_DATA_SOPHIA_DIR, NAME_FILE_SCHEDULES_SHOPIA), sheet_name="NHORARIOS")
     logger.info(f"DataFrame de horários da SHOPIA carregado com sucesso ({len(df_horarios_shopia)} linhas).")
     
     return df_events_BEST, df_horarios_shopia
@@ -112,7 +139,7 @@ def main():
     df_events_SHOPIA_FINAL ['NovoProf']= np.where(df_events_SHOPIA_FINAL['DSD_NR_BEST'] == 0, 'Keep', df_events_SHOPIA_FINAL['NovoProf'])
 
     # Guardar o DataFrame final em um novo ficheiro Excel
-    output_file_path = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f'NHORARIOS_FINAL_{INSTITUTION}.xlsx')
+    output_file_path = os.path.join(VALIDATION_DATA_SOPHIA_DIR, f'NHORARIOS_FINAL_MAPPING_{FILE_PREFIX}_{ano_semestre}.xlsx')
     df_events_SHOPIA_FINAL.to_excel(output_file_path, index=False, sheet_name="NHORARIOS", freeze_panes=(1,0))
     logger.info(f"O ficheiro final foi guardado em: {output_file_path}")
 
@@ -132,8 +159,8 @@ def main():
 
 
     # Guardar o DataFrame final em um novo ficheiro Excel
-    output_file_path = os.path.join(SOURCE_DATA_DIR_NHORARIOS_TO_UPDATE, f'BEST_MAP_NHORARIOS_{INSTITUTION}.xlsx')
-    df_events_BEST.to_excel(output_file_path, index=False, sheet_name="BEST_NHORARIOs", freeze_panes=(1,0))
+    output_file_path = os.path.join(VALIDATION_DATA_BEST_DIR, f'BEST_MAP_NHORARIOS_{FILE_PREFIX}_{ano_semestre}.xlsx')
+    df_events_BEST.to_excel(output_file_path, index=False, sheet_name="BEST_NHORARIOS", freeze_panes=(1,0))
     logger.info(f"O ficheiro final foi guardado em: {output_file_path}")
 
 

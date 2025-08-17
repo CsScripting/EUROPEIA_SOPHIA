@@ -9,11 +9,26 @@ QA = "https://elpusonlinelisboaqa.ipam.pt/WebSAPI/websapi.asmx"
 # SOAP API Configuration
 # WSDL_URL = Europeia + "?WSDL"
 
-ALL_DATA = True
+ALL_DATA = False
 
 ID_CERTIFICADO = 91319247
 
-WSDL_URL = UE_IADE + "?WSDL"
+INSTITUTION = "QA"
+
+# Selecionar a URL base baseado na instituição
+if INSTITUTION == "QA":
+    WSDL_URL = QA + "?WSDL"
+elif INSTITUTION == "Europeia":
+    WSDL_URL = Europeia + "?WSDL"
+elif INSTITUTION == "UE_IADE":
+    WSDL_URL = UE_IADE + "?WSDL"
+elif INSTITUTION == "IPAM_Porto":
+    WSDL_URL = IPAM_Porto + "?WSDL"
+elif INSTITUTION == "IPAM_Lisboa":
+    WSDL_URL = IPAM_Lisboa + "?WSDL"
+else:
+    print(f"AVISO: Instituição '{INSTITUTION}' não reconhecida. Usando QA como padrão.")
+    WSDL_URL = QA + "?WSDL"
 
 # Determina o sufixo com base no WSDL_URL
 if WSDL_URL == Europeia + "?WSDL":

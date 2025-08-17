@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
     from src.utils.setup_logging import setup_colored_logging, redirect_stdout_stderr_to_log
-    from src.core.event_processor_europeia import edit_linha_horario
+    from src.core.event_processor_europeia import put_linha_horario_DSD_HIGHER_NHORARIO
     import config
     from config import suffix
 except ImportError as e:
@@ -20,7 +20,7 @@ except ImportError as e:
 
 # --- Configuração do Logging ---
 log_dir = "LOGS"
-log_file_name = f"edit_linha_horario_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+log_file_name = f"put_linha_horario_DSD_HIGHER_NHORARIO_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 log_file_path = os.path.join(log_dir, log_file_name)
 setup_colored_logging(log_file_path)
 redirect_stdout_stderr_to_log()
@@ -78,7 +78,7 @@ def load_dataframes():
 
 def main():
     """
-    Função principal para EDITAR linha de Horario.
+    Função principal para Inserir linha de Horario.
     """
     logger.notice("--- INÍCIO DO PROCESSO DE ATUALIZAÇÃO DE LINHAS DE HORÁRIO NA SHOPIA ---")
 
@@ -92,13 +92,13 @@ def main():
     df_horarios_shopia = load_dataframes()
     
     # 3. Chamar a função para editar as linhas de horário
-    df_horarios_atualizado = edit_linha_horario(client, logger, df_horarios_shopia, ano_lectivo=ANO_LECTIVO)
+    df_horarios_atualizado = put_linha_horario_DSD_HIGHER_NHORARIO(client, logger, df_horarios_shopia, ano_lectivo=ANO_LECTIVO)
 
     # 4. Guardar o DataFrame com as respostas da atualização
-    output_filename = f"UPDATED_NHORARIOS_FINAL_{FILE_PREFIX}_{ano_semestre}.xlsx"
+    output_filename = f"INSERTED_NHORARIOS_FINAL_{FILE_PREFIX}_{ano_semestre}.xlsx"
     output_filepath = os.path.join(VALIDATION_DATA_SOPHIA_DIR, output_filename)
-    df_horarios_atualizado.to_excel(output_filepath, index=False, sheet_name="UpdatedHorarios", freeze_panes=(1,0))
-    logger.info(f"Processo concluído. Ficheiro com resultados da atualização guardado em: {output_filepath}")
+    df_horarios_atualizado.to_excel(output_filepath, index=False, sheet_name="InsertedHorarios", freeze_panes=(1,0))
+    logger.info(f"Processo concluído. Ficheiro com resultados da inserção guardado em: {output_filepath}")
 
 
     logger.notice("--- FIM DO PROCESSO ---")

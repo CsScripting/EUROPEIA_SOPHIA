@@ -19,7 +19,7 @@ try:
     from src.api.client import ApiClient
     from src.core.event_processor import fetch_existing_events, process_raw_events_df, create_column_institucion_info_and_id_mod
     from src.core.event_processor_europeia import filter_events_without_module_id_and_student_groups, save_data_institucion
-    from src.core import constants
+    
     import config
 except ImportError as e:
     logging.error(f"Failed to import necessary modules for main_fetchevent.py: {e}")
@@ -27,11 +27,32 @@ except ImportError as e:
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
+# --- Import config ---
+import config
+
 #VARIABLES SCRIPT
 TARGET_ACADEMIC_YEAR_NAME = "2025/2026 - 1º Semestre"
 SEMESTER = "PRIMER" ## ID 9
 ANO_PREFIX = "2025"
 OUTPUT_VIEWER_EVENTS_EXCEL_FILENAME = f'fetch_event_{ANO_PREFIX}_{SEMESTER}.xlsx'
+
+# --- Setup Output Directories ---
+DATA_PROCESS_DIR = "DATA_PROCESS"
+# Mapeamento de instituição para prefixo do arquivo
+INSTITUTION_TO_PREFIX = {
+    'QA': 'QA',
+    'Europeia': 'EU',
+    'UE_IADE': 'IADE',
+    'IPAM_Porto': 'IPAM_POR',
+    'IPAM_Lisboa': 'IPAM_LIS'
+}
+# Obter o prefixo correto para o nome do arquivo
+FILE_PREFIX = INSTITUTION_TO_PREFIX.get(config.INSTITUTION, config.INSTITUTION)
+
+INSTITUTION_DIR = os.path.join(DATA_PROCESS_DIR, FILE_PREFIX)  # Usa o sufixo da instituição (ex: EU para QA)
+DATA_BEST_DIR = os.path.join(INSTITUTION_DIR, "DATA_BEST")
+# Criar estrutura de diretórios
+os.makedirs(DATA_BEST_DIR, exist_ok=True)
 
 def run_event_fetching_and_processing():
     """Main function to orchestrate fetching, processing to viewer DTO, and saving event data."""
@@ -74,12 +95,10 @@ def run_event_fetching_and_processing():
     # 7. Save the general, consolidated file first
     logger.info("=== BWP EVENT PROCESSING: Saving consolidated ViewerDTO events to Excel ===")
     try:
-        output_dir = os.path.join("DATA_PROCESS", "SCHEDULES_BEST")
-        os.makedirs(output_dir, exist_ok=True)
+        # Criar diretório para a instituição dentro de DATA_BEST
+        output_path = os.path.join(DATA_BEST_DIR, OUTPUT_VIEWER_EVENTS_EXCEL_FILENAME)
         
-        output_path = os.path.join(output_dir, OUTPUT_VIEWER_EVENTS_EXCEL_FILENAME)
-        
-        viewer_events_df.to_excel(output_path, sheet_name='Viewer_Events', index=False)
+        viewer_events_df.to_excel(output_path, sheet_name='Viewer_Events', index=False, freeze_panes=(1,0))
         logger.info(f"Successfully exported consolidated ViewerDTO events data to {output_path}")
 
     except Exception as e:
