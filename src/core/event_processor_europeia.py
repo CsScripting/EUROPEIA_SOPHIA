@@ -733,7 +733,7 @@ def get_nhorario_put_linha_horario(client, logger, df_horarios_shopia: pd.DataFr
                 
             try:
                 p_entrada = (
-                    # f"CdCurso={row['CdCurso']};"
+                    f"CdCurso=0;"
                     f"CdCadeira={row['CdDisc']};"
                     f"CdAnoLect={ano_lectivo};"
                     f"CdPeriodo={periodo_id}"
@@ -753,7 +753,7 @@ def get_nhorario_put_linha_horario(client, logger, df_horarios_shopia: pd.DataFr
                 response = client.service.Execute(**params)
                 
                 if response:
-                    # Se a resposta for "Não foi encontrado nenhum registo", continuar procurando
+                    # Se a resposta for "Não foi encontrado nenhum registo", continuar a procurar
                     if "Não foi encontrado nenhum registo" in response:
                         logger.debug(f"Linha {index + 1}: Nenhum registro encontrado para período {periodo_id}. Continuando busca...")
                         continue
@@ -789,6 +789,24 @@ def get_nhorario_put_linha_horario(client, logger, df_horarios_shopia: pd.DataFr
             except Exception as e:
                 logger.error(f"Linha {index + 1}: Erro ao chamar GetTurmas para período {periodo_id}: {e}", exc_info=True)
                 df_to_insert.loc[index, 'GetTurmas_Response'] = f"ERRO: {str(e)}"
+
+    # Verificar se há linhas para processar
+    if df_to_insert.empty:
+        logger.info("Nenhuma linha para inserir (NHorario = 0).")
+        # Criar um DataFrame com as colunas necessárias e a resposta "SEM NHORARIO"
+        df_to_insert = df_horarios_shopia.copy()
+        df_to_insert['GetTurmas_Response'] = "SEM NHORARIO"
+        df_to_insert['NHORARIOS'] = ""
+        df_to_insert['PeriodoEncontrado'] = None
+        return df_to_insert
+
+    # Inicializar as colunas apenas para linhas que não têm resposta ainda
+    if 'GetTurmas_Response' not in df_to_insert.columns:
+        df_to_insert['GetTurmas_Response'] = None
+    if 'NHORARIOS' not in df_to_insert.columns:
+        df_to_insert['NHORARIOS'] = None
+    if 'PeriodoEncontrado' not in df_to_insert.columns:
+        df_to_insert['PeriodoEncontrado'] = None
 
     # Para linhas que não encontraram nenhum registro em nenhum período
     sem_resultado_mask = df_to_insert['GetTurmas_Response'].isna()
@@ -985,7 +1003,7 @@ def put_linha_horario_DSD_HIGHER_NHORARIO(client, logger, df_horarios_shopia: pd
                 f"HoraFim={row['HoraFim']};"
                 f"MinuFim={row['MinutoFim']};"
                 f"CdRegime={row['CdRegime']};"
-                f"CdCurso={row['CdCurso']};"
+                f"CdCurso=0;"
                 f"AnoLect={ano_lectivo};"
                 f"CdPeriodo={row['CdPeriodo']};"
                 f"CdDocente={row['NovoProf']}"  # Usar o NovoProf que foi calculado
@@ -1023,5 +1041,6 @@ def put_linha_horario_DSD_HIGHER_NHORARIO(client, logger, df_horarios_shopia: pd
 
     logger.notice(f"--- FIM DA INSERÇÃO DE HORÁRIOS ---")
     logger.notice(f"Resultados: {success_count} sucessos, {error_count} erros de um total de {len(df_to_insert)} linhas a inserir.")
-
+    
+    return df_to_insert
 

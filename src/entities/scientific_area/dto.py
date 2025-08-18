@@ -1,0 +1,35 @@
+from dataclasses import dataclass
+from typing import Any, Optional
+
+@dataclass
+class ScientificAreaDTO:
+    # Mandatory fields
+    name: str
+    active: bool
+
+    # Optional fields
+    id: Optional[int] = None
+    createdBy: Optional[str] = None
+    lastModifiedBy: Optional[str] = None
+    lastModifiedAt: Optional[str] = None
+    createdAt: Optional[str] = None 
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'ScientificAreaDTO':
+        """Creates a ScientificAreaDTO instance from a dictionary."""
+        if not data:
+            raise ValueError("Input data is None or empty, cannot create ScientificAreaDTO with mandatory fields.")
+
+        # Check for mandatory fields
+        if 'name' not in data or 'active' not in data:
+            raise ValueError("Missing one or more mandatory fields (name, active) to create ScientificAreaDTO from dict")
+
+        return cls(
+            name=data['name'],
+            active=data['active'],
+            id=data.get('id'),
+            createdBy=data.get('createdBy'),
+            lastModifiedBy=data.get('lastModifiedBy'),
+            lastModifiedAt=data.get('lastModifiedAt'),
+            createdAt=data.get('createdAt')
+        ) 
