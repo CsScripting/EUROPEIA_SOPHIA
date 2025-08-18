@@ -305,7 +305,7 @@ def filter_events_without_module_id_and_student_groups(df: pd.DataFrame) -> pd.D
     return df_filtered
 
 
-def save_data_institucion(df: pd.DataFrame, semester: str, ano_prefix: str):
+def save_data_institucion(df: pd.DataFrame, semester: str, ano_prefix: str, data_best_dir: str):
     """
     Filtra, segmenta e guarda os dados dos eventos em ficheiros Excel por instituição
     dentro da subpasta INSTITUTION/DATA_BEST, incluindo o prefixo do ano.
@@ -333,9 +333,9 @@ def save_data_institucion(df: pd.DataFrame, semester: str, ano_prefix: str):
     df_invalid = df[~valid_mask].copy()
 
     # Usar a estrutura DATA_PROCESS/INSTITUTION/DATA_BEST
-    data_process_dir = "DATA_PROCESS"
-    institution_dir = os.path.join(data_process_dir, config.INSTITUTION)
-    data_best_dir = os.path.join(institution_dir, "DATA_BEST")
+    # data_process_dir = "DATA_PROCESS"
+    # institution_dir = os.path.join(data_process_dir, config.INSTITUTION)
+    # data_best_dir = os.path.join(institution_dir, "DATA_BEST")
     os.makedirs(data_best_dir, exist_ok=True)
 
     if not df_invalid.empty:

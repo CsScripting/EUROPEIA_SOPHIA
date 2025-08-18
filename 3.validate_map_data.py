@@ -35,7 +35,19 @@ IDENTIFICAR FICHEIRO SAIDA
 '''
 
 ano_semestre = "2025_PRIMER"
-INSTITUTION_NAME_FILE = config.INSTITUTION + "_" + ano_semestre
+
+if config.INSTITUTION == "Europeia":
+    INSTITUTION_NAME_FILE = 'EU' + "_" + ano_semestre
+elif config.INSTITUTION == "UE_IADE":
+    INSTITUTION_NAME_FILE = 'IADE' + "_" + ano_semestre
+elif config.INSTITUTION == "IPAM_Porto":
+    INSTITUTION_NAME_FILE = 'IPAM_POR' + "_" + ano_semestre
+elif config.INSTITUTION == "IPAM_Lisboa":
+    INSTITUTION_NAME_FILE = 'IPAM_LIS' + "_" + ano_semestre
+elif config.INSTITUTION == "QA":
+    INSTITUTION_NAME_FILE = 'QA' + "_" + ano_semestre
+else:
+    INSTITUTION_NAME_FILE = config.INSTITUTION
 
 '''
 ### DADOS DE ENTRADA ####:

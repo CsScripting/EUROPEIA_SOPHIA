@@ -9,7 +9,7 @@ QA = "https://elpusonlinelisboaqa.ipam.pt/WebSAPI/websapi.asmx"
 # SOAP API Configuration
 # WSDL_URL = Europeia + "?WSDL"
 
-ALL_DATA = False
+ALL_DATA = True
 
 ID_CERTIFICADO = 91319247
 

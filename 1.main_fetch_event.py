@@ -107,7 +107,7 @@ def run_event_fetching_and_processing():
     # 8. Save Data Segmented by Institution
     logger.info("=== BWP EVENT PROCESSING: Saving segmented data by institution ===")
     try:
-        save_data_institucion(viewer_events_df, SEMESTER, ANO_PREFIX)
+        save_data_institucion(viewer_events_df, SEMESTER, ANO_PREFIX,DATA_BEST_DIR)
     except Exception as e:
         logger.error(f"Failed to save segmented event data: {e}", exc_info=True)
 
