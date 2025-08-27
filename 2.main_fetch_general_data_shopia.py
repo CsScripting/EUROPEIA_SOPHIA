@@ -114,10 +114,10 @@ def main():
         return
 
     # 1. Obter Anos Curriculares
-    logger.notice("--- Passo 1 de 7: A obter dados de Anos Curriculares ---")
-    anos_curr_df = get_ano_curr(client=client, logger=logger, suffix=suffix)
-    if anos_curr_df is None:
-        logger.error("Falha ao obter anos curriculares. Continuando com os outros dados...")
+    # logger.notice("--- Passo 1 de 7: A obter dados de Anos Curriculares ---")
+    # anos_curr_df = get_ano_curr(client=client, logger=logger, suffix=suffix)
+    # if anos_curr_df is None:
+    #     logger.error("Falha ao obter anos curriculares. Continuando com os outros dados...")
 
     # 2. Obter Períodos e determinar quais consultar
     logger.notice("--- Passo 2 de 7: A obter dados de Períodos ---")
