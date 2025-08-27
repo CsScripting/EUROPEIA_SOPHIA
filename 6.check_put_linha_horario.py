@@ -28,6 +28,13 @@ setup_colored_logging(log_file_path)
 redirect_stdout_stderr_to_log()
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
+
+
+"""
+    Função principal para Verificar se as linhas de horário foram inseridas no SHOPIA.
+    Cria pasta TO_INSERT com os horários que serão inseridos no SHOPIA.
+"""
+
 # Mapeamento de instituição para prefixo do arquivo
 INSTITUTION_TO_PREFIX = {
     'QA': 'QA',
@@ -50,9 +57,13 @@ INSTITUTION_DIR = os.path.join(DATA_PROCESS_DIR, FILE_PREFIX)
 
 # Diretórios de entrada/saída
 VALIDATION_DATA_BEST_DIR = os.path.join(INSTITUTION_DIR, "VALIDATION_DATA_BEST")
-VALIDATION_DATA_SOPHIA_DIR = os.path.join(INSTITUTION_DIR, "VALIDATION_DATA_SOPHIA")
+TO_INSERT_DIR = os.path.join(INSTITUTION_DIR, "TO_INSERT")  # Nova pasta para os arquivos a serem inseridos
+
+# Criar todas as pastas necessárias
+os.makedirs(DATA_PROCESS_DIR, exist_ok=True)
+os.makedirs(INSTITUTION_DIR, exist_ok=True)
 os.makedirs(VALIDATION_DATA_BEST_DIR, exist_ok=True)
-os.makedirs(VALIDATION_DATA_SOPHIA_DIR, exist_ok=True)
+os.makedirs(TO_INSERT_DIR, exist_ok=True)
 
 # Nome do arquivo de entrada
 NAME_FILE_SCHEDULES_SHOPIA = f"BEST_MAP_NHORARIOS_{FILE_PREFIX}_{ano_semestre}.xlsx"
@@ -99,9 +110,11 @@ def main():
     # 3. Chamar a função para filtrar e inserir as linhas de horário
     df_horarios_filtrado = get_nhorario_put_linha_horario(client, logger, df_horarios_best_to_insert, ano_lectivo=ANO_LECTIVO)
 
+    df_horarios_filtrado.drop(columns=['NHorario'], inplace=True)
+
     # 4. Guardar o DataFrame com as linhas filtradas
     output_filename = f"TO_INSERT_NHORARIOS_{FILE_PREFIX}_{ano_semestre}.xlsx"
-    output_filepath = os.path.join(VALIDATION_DATA_SOPHIA_DIR, output_filename)
+    output_filepath = os.path.join(TO_INSERT_DIR, output_filename)  # Usar a nova pasta TO_INSERT
     df_horarios_filtrado.to_excel(output_filepath, index=False, sheet_name="HorariosToInsert", freeze_panes=(1,0))
     logger.info(f"Processo concluído. Ficheiro com horários a inserir guardado em: {output_filepath}")
 
@@ -109,5 +122,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

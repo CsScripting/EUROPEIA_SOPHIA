@@ -734,7 +734,8 @@ def get_nhorario_put_linha_horario(client, logger, df_horarios_shopia: pd.DataFr
             try:
                 p_entrada = (
                     f"CdCurso=0;"
-                    f"CdCadeira={row['CdDisc']};"
+                    f"CdDepartamento={row['CdDisc_SHOPIA'].split('C')[0]};"
+                    f"CdCadeira={row['CdDisc_SHOPIA'].split('C')[1]};"
                     f"CdAnoLect={ano_lectivo};"
                     f"CdPeriodo={periodo_id}"
                 )
@@ -767,8 +768,28 @@ def get_nhorario_put_linha_horario(client, logger, df_horarios_shopia: pd.DataFr
                         resultados_validos = [r for r in resultados if r.find('c1') is not None and "Não foi encontrado nenhum registo" not in r.find('c1').text]
                         
                         if resultados_validos:
-                            # Extrair todos os NHorarios (valores de c1)
-                            nhorarios = [r.find('c1').text for r in resultados_validos]
+                            # Extrair todos os NHorarios e DgTurmas
+                            resultados_dict = [{
+                                'cdturma': r.find('c1').text,
+                                'dgturma': r.find('c2').text
+                            } for r in resultados_validos]
+                            
+                            # Guardar todos os CdTurmas encontrados
+                            nhorarios = [r['cdturma'] for r in resultados_dict]
+                            df_to_insert.loc[index, 'NHORARIOS'] = ','.join(nhorarios)
+                            
+                            # Procurar o CdTurma específico que corresponde ao DgTurma da linha
+                            matching_result = next(
+                                (r['cdturma'] for r in resultados_dict if r['dgturma'] == row['DgTurma']),
+                                None
+                            )
+                            
+                            if matching_result:
+                                df_to_insert.loc[index, 'CdTurma'] = matching_result
+                                df_to_insert.loc[index, 'ToInsert'] = 1
+                            else:
+                                df_to_insert.loc[index, 'CdTurma'] = None
+                                df_to_insert.loc[index, 'ToInsert'] = 0
                             
                             # Guardar a resposta e o status
                             if len(resultados_validos) > 1:
@@ -776,8 +797,6 @@ def get_nhorario_put_linha_horario(client, logger, df_horarios_shopia: pd.DataFr
                             else:
                                 df_to_insert.loc[index, 'GetTurmas_Response'] = "RESULTADO=1"
                             
-                            # Guardar os NHorarios concatenados
-                            df_to_insert.loc[index, 'NHORARIOS'] = ','.join(nhorarios)
                             df_to_insert.loc[index, 'PeriodoEncontrado'] = periodo_id
                             nhorario_encontrado = True
                             break
@@ -798,6 +817,8 @@ def get_nhorario_put_linha_horario(client, logger, df_horarios_shopia: pd.DataFr
         df_to_insert['GetTurmas_Response'] = "SEM NHORARIO"
         df_to_insert['NHORARIOS'] = ""
         df_to_insert['PeriodoEncontrado'] = None
+        df_to_insert['CdTurma'] = None
+        df_to_insert['ToInsert'] = 0
         return df_to_insert
 
     # Inicializar as colunas apenas para linhas que não têm resposta ainda
@@ -807,11 +828,17 @@ def get_nhorario_put_linha_horario(client, logger, df_horarios_shopia: pd.DataFr
         df_to_insert['NHORARIOS'] = None
     if 'PeriodoEncontrado' not in df_to_insert.columns:
         df_to_insert['PeriodoEncontrado'] = None
+    if 'CdTurma' not in df_to_insert.columns:
+        df_to_insert['CdTurma'] = None
+    if 'ToInsert' not in df_to_insert.columns:
+        df_to_insert['ToInsert'] = 0
 
     # Para linhas que não encontraram nenhum registro em nenhum período
     sem_resultado_mask = df_to_insert['GetTurmas_Response'].isna()
     df_to_insert.loc[sem_resultado_mask, 'GetTurmas_Response'] = "SEM NHORARIO"
     df_to_insert.loc[sem_resultado_mask, 'NHORARIOS'] = ""
+    df_to_insert.loc[sem_resultado_mask, 'CdTurma'] = None
+    df_to_insert.loc[sem_resultado_mask, 'ToInsert'] = 0
 
     logger.info(f"Processo de GetTurmas concluído para {len(df_to_insert)} linhas")
     logger.info(f"- {len(df_to_insert[df_to_insert['GetTurmas_Response'] == 'RESULTADO=1'])} linhas com um resultado")
