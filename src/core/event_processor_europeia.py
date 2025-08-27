@@ -1071,3 +1071,148 @@ def put_linha_horario_DSD_HIGHER_NHORARIO(client, logger, df_horarios_shopia: pd
     
     return df_to_insert
 
+
+
+def put_linha_horario_to_insert(client, logger, df_horarios_shopia: pd.DataFrame, ano_lectivo: int) -> pd.DataFrame:
+    """
+    Insere novas linhas de horário na SHOPIA utilizando o endpoint PutHorario.
+    Processa apenas as linhas que foram previamente marcadas com ToInsert = 1.
+    Se uma linha tem múltiplos docentes, cria uma inserção para cada um com horários diferentes.
+    """
+    logger.info(f"--- INÍCIO DA INSERÇÃO DE HORÁRIOS NA SHOPIA ---")
+    
+    # Converter a string de NDocente para lista
+    def safe_eval_list(val):
+        if pd.isna(val):
+            return []
+        try:
+            if isinstance(val, str):
+                return ast.literal_eval(val)
+            elif isinstance(val, list):
+                return val
+            else:
+                return [val]
+        except:
+            return [val]
+    
+    # Filtra apenas as linhas que foram marcadas para inserção
+    df_to_insert = df_horarios_shopia[df_horarios_shopia['ToInsert'] == 1].copy()
+    if df_to_insert.empty:
+        logger.warning("Nenhuma linha marcada para inserção (ToInsert = 1). Finalizando.")
+        return df_horarios_shopia
+    
+    # Converter NDocente para lista
+    df_to_insert['NDocente'] = df_to_insert['NDocente'].apply(safe_eval_list)
+    
+    # Lista para armazenar as linhas processadas
+    processed_rows = []
+    success_count = 0
+    error_count = 0
+    total_insercoes = 0
+    
+    # Calcular total de inserções (considerando múltiplos docentes)
+    for _, row in df_to_insert.iterrows():
+        total_insercoes += len(row['NDocente'])
+    
+    logger.info(f"Encontradas {len(df_to_insert)} linhas para processar, resultando em {total_insercoes} inserções totais.")
+    
+    current_insert = 0
+    for index, row in df_to_insert.iterrows():
+        # Inicializar controle de horários para esta linha
+        horarios_usados = []
+        dia_atual = 2  # Começa na segunda-feira
+        hora_atual = 9  # Começa às 9h
+        
+        # Para cada docente na lista, fazer uma inserção
+        for docente in row['NDocente']:
+            current_insert += 1
+            
+            # Encontrar próximo horário disponível
+            while True:
+                horario = {
+                    'dia': dia_atual,
+                    'hora_ini': hora_atual,
+                    'hora_fim': hora_atual + 2  # Aulas de 2 horas
+                }
+                
+                # Verificar se este horário já está usado
+                if horario not in horarios_usados:
+                    # Horário disponível, usar este
+                    horarios_usados.append(horario)
+                    break
+                
+                # Tentar próximo horário no mesmo dia
+                hora_atual += 2
+                if hora_atual + 2 > 20:  # Se passar das 20h
+                    hora_atual = 9  # Volta para 9h
+                    dia_atual += 1  # Próximo dia
+                    if dia_atual > 6:  # Se passar de sexta
+                        dia_atual = 2  # Volta para segunda
+            
+            try:
+                p_entrada = (
+                    f"TpUtil=0;CdUtil=2029;PwdUtil=S1st3m0nl1ne#;"
+                    f"CdDis={row['CdDisc_SHOPIA']};"
+                    f"NHorario={row['CdTurma']};"
+                    f"DiaSemana={horario['dia']};"
+                    f"HoraIni={horario['hora_ini']};"
+                    f"MinuIni=0;"
+                    f"HoraFim={horario['hora_fim']};"
+                    f"MinuFim=0;"
+                    f"CdRegime=3;"
+                    f"CdCurso=0;"
+                    f"AnoLect={ano_lectivo};"
+                    f"CdPeriodo={row['PeriodoEncontrado']};"
+                    f"CdDocente={docente}"
+                )
+
+                params = {
+                    'Funcao': 'PutHorario',
+                    'NivelComp': 0,
+                    'Certificado': config.ID_CERTIFICADO,
+                    'FormatoOutput': 0,
+                    'PEntrada': p_entrada,
+                    'PSaida': 'Retorno',
+                    'Agrupar': '',
+                    'UseParser': ''
+                }
+                
+                logger.debug(f"Inserção {current_insert}/{total_insercoes}: Chamando PutHorario com PEntrada: {p_entrada}")
+                response = client.service.Execute(**params)
+
+                # Criar uma cópia da linha original
+                new_row = row.copy()
+                
+                # Adicionar as informações da inserção
+                new_row['Professor'] = docente
+                new_row['Horario'] = f"Dia {horario['dia']}, {horario['hora_ini']}:00-{horario['hora_fim']}:00"
+                
+                if "[CDATA[1]]" in str(response):
+                    new_row['InsertResponse'] = "INSERTED"
+                    logger.info(f"Inserção {current_insert}/{total_insercoes}: Horário inserido com sucesso para docente {docente} ({new_row['Horario']}). Resposta: {response}")
+                    success_count += 1
+                else:
+                    new_row['InsertResponse'] = str(response)
+                    logger.error(f"Inserção {current_insert}/{total_insercoes}: Erro ao inserir horário para docente {docente}. Resposta: {response}")
+                    error_count += 1
+
+                # Adicionar a linha processada à lista
+                processed_rows.append(new_row)
+
+            except Exception as e:
+                # Em caso de erro, ainda criar uma linha com a informação do erro
+                new_row = row.copy()
+                new_row['Professor'] = docente
+                new_row['Horario'] = f"Dia {horario['dia']}, {horario['hora_ini']}:00-{horario['hora_fim']}:00"
+                new_row['InsertResponse'] = f"EXCEPTION: {e}"
+                processed_rows.append(new_row)
+                
+                logger.error(f"Inserção {current_insert}/{total_insercoes}: Exceção ao chamar o serviço SOAP para docente {docente}: {e}", exc_info=True)
+                error_count += 1
+
+    logger.notice(f"--- FIM DA INSERÇÃO DE HORÁRIOS ---")
+    logger.notice(f"Resultados: {success_count} sucessos, {error_count} erros de um total de {total_insercoes} inserções.")
+    
+    # Criar novo DataFrame com as linhas processadas
+    return pd.DataFrame(processed_rows)
+

@@ -48,7 +48,13 @@ INSTITUTION_DIR = os.path.join(DATA_PROCESS_DIR, FILE_PREFIX)
 
 # Diretórios de entrada/saída
 VALIDATION_DATA_SOPHIA_DIR = os.path.join(INSTITUTION_DIR, "VALIDATION_DATA_SOPHIA")
+UPDATED_DIR = os.path.join(INSTITUTION_DIR, "UPDATED")  # Nova pasta para arquivos atualizados
+
+# Criar todas as pastas necessárias
+os.makedirs(DATA_PROCESS_DIR, exist_ok=True)
+os.makedirs(INSTITUTION_DIR, exist_ok=True)
 os.makedirs(VALIDATION_DATA_SOPHIA_DIR, exist_ok=True)
+os.makedirs(UPDATED_DIR, exist_ok=True)  # Criar a pasta UPDATED se não existir
 
 # Nome do arquivo de entrada
 NAME_FILE_SCHEDULES_SHOPIA = f"NHORARIOS_FINAL_MAPPING_{FILE_PREFIX}_{ano_semestre}.xlsx"
@@ -96,7 +102,7 @@ def main():
 
     # 4. Guardar o DataFrame com as respostas da atualização
     output_filename = f"UPDATED_NHORARIOS_FINAL_{FILE_PREFIX}_{ano_semestre}.xlsx"
-    output_filepath = os.path.join(VALIDATION_DATA_SOPHIA_DIR, output_filename)
+    output_filepath = os.path.join(UPDATED_DIR, output_filename)  # Usar a pasta UPDATED
     df_horarios_atualizado.to_excel(output_filepath, index=False, sheet_name="UpdatedHorarios", freeze_panes=(1,0))
     logger.info(f"Processo concluído. Ficheiro com resultados da atualização guardado em: {output_filepath}")
 
