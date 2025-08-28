@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+import numpy as np
 import os
 import dataclasses # Required for asdict
 from typing import Optional, List, Any # Updated typing imports
@@ -953,6 +954,24 @@ def create_column_institucion_info_and_id_mod(df: pd.DataFrame) -> pd.DataFrame:
 
     logger.info("Successfully created/updated 'Institution' column using explode.")
     
+    return df
+
+def create_column_institucion_info_by_module_code(df: pd.DataFrame) -> pd.DataFrame:
+
+    if 'module_code' not in df.columns:
+        logger.warning("DataFrame does not have 'module_code' column. Cannot create 'Institution_Acronyms' column.")
+        df['Institution_Acronyms'] = None
+        return df
+
+    df['Institution_Acronyms'] = df['module_code'].str.split('-', n=1, expand=True)[0].str.strip()
+    df['Institution'] = np.where(df['Institution_Acronyms'] == 'E', 'FCST',
+                        np.where(df['Institution_Acronyms'] == 'I', 'IADE',
+                        np.where(df['Institution_Acronyms'] == 'L', 'IPAM LISBOA',
+                        np.where(df['Institution_Acronyms'] == 'P', 'IPAM PORTO',
+                                'NULL'))))
+
+    df.drop(columns=['Institution_Acronyms'], inplace=True)
+    df["Institution"] = df["Institution"].apply(lambda x: [x])
     return df
 
 def create_column_institucion_info_and_id_mod_acronyms(df: pd.DataFrame) -> pd.DataFrame:

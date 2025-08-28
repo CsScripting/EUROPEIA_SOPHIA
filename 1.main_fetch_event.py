@@ -17,7 +17,7 @@ redirect_stdout_stderr_to_log()
 try:
     from src.auth.identity_server import get_access_token
     from src.api.client import ApiClient
-    from src.core.event_processor import fetch_existing_events, process_raw_events_df, create_column_institucion_info_and_id_mod
+    from src.core.event_processor import fetch_existing_events, process_raw_events_df, create_column_institucion_info_and_id_mod, create_column_institucion_info_by_module_code
     from src.core.event_processor_europeia import filter_events_without_module_id_and_student_groups, save_data_institucion
     
     import config
@@ -86,8 +86,11 @@ def run_event_fetching_and_processing():
         return
     logger.info(f"Successfully processed {len(viewer_events_df)} events into ViewerDTO format.")
 
-    # 5. Create Institution Column
-    viewer_events_df = create_column_institucion_info_and_id_mod(viewer_events_df)
+    # 5. Create Institution Column (POR DESIGNAÇÂO CURSO)
+    # viewer_events_df = create_column_institucion_info_and_id_mod(viewer_events_df)
+
+    # 5.1 Create Institution Column Acronyms by module code (POR CODIGO DISCIPLINA)
+    viewer_events_df = create_column_institucion_info_by_module_code(viewer_events_df)
 
     # 6. Filter Events
     viewer_events_df = filter_events_without_module_id_and_student_groups(viewer_events_df)
