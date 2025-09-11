@@ -20,7 +20,7 @@ except ImportError as e:
 
 # --- Configuração do Logging ---
 log_dir = "LOGS"
-log_file_name = f"put_linha_horario_DSD_HIGHER_NHORARIO_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+log_file_name = f"7.put_linha_horario_DSD_HIGHER_NHORARIO_{config.INSTITUTION}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 log_file_path = os.path.join(log_dir, log_file_name)
 setup_colored_logging(log_file_path)
 redirect_stdout_stderr_to_log()

@@ -710,7 +710,7 @@ def get_nhorario_put_linha_horario(client, logger, df_horarios_shopia: pd.DataFr
     Insere linhas de horário na SHOPIA utilizando o endpoint PutLinhaHorario.
     Primeiro obtém o NHorario através do endpoint GetTurmas.
     """
-    logger.info(f"--- INÍCIO DA INSERÇÃO DE HORÁRIOS NA SHOPIA ---")
+    logger.info(f"--- INÍCIO DA VALIDAÇÃO PARA INSERÇÃO DE HORÁRIOS NA SHOPIA ---")
     total_rows = len(df_horarios_shopia)
     
     # Filtra apenas as linhas que precisam ser inseridas (NHorario = 0)

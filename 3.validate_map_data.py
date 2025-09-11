@@ -15,16 +15,18 @@ except ImportError as e:
     print(f"Erro de importação: {e}. Certifique-se de que o script está na raiz do projeto.")
     sys.exit(1)
 
+# --- Import config ---
+import config
+
 # --- Configuração do Logging ---
 log_dir = "LOGS"
-log_file_name = f"validate_map_data_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+log_file_name = f"3.validate_map_data_{config.INSTITUTION}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 log_file_path = os.path.join(log_dir, log_file_name)
 setup_colored_logging(log_file_path)
 redirect_stdout_stderr_to_log()
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
-# --- Import config ---
-import config
+
 
 # Padrões para encontrar os ficheiros mais recentes
 

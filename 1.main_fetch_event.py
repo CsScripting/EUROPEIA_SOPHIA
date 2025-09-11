@@ -6,13 +6,7 @@ import pandas as pd
 import datetime
 from src.utils.setup_logging import setup_colored_logging, redirect_stdout_stderr_to_log
 
-# --- Setup Application-Wide Logging ---
-log_dir = "LOGS"
-log_file_name = f"main_fetch_event_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
-log_file_path = os.path.join(log_dir, log_file_name)
 
-setup_colored_logging(log_file_path)
-redirect_stdout_stderr_to_log()
 
 try:
     from src.auth.identity_server import get_access_token
@@ -24,6 +18,14 @@ try:
 except ImportError as e:
     logging.error(f"Failed to import necessary modules for main_fetchevent.py: {e}")
     sys.exit(1)
+
+# --- Setup Application-Wide Logging ---
+log_dir = "LOGS"
+log_file_name = f"1.main_fetch_event_{config.INSTITUTION}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+log_file_path = os.path.join(log_dir, log_file_name)
+
+setup_colored_logging(log_file_path)
+redirect_stdout_stderr_to_log()
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 

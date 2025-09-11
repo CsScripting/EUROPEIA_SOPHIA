@@ -28,7 +28,7 @@ except ImportError as e:
 
 # --- Configuração do Logging ---
 log_dir = "LOGS"
-log_file_name = f"main_module_group_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+log_file_name = f"2.main_module_group_SHOPIA_{config.INSTITUTION}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 log_file_path = os.path.join(log_dir, log_file_name)
 
 setup_colored_logging(log_file_path)
